@@ -1,0 +1,347 @@
+:root {
+  --ssc-bg-base: #0d1117;
+  --ssc-bg-surface: #161b22;
+  --ssc-bg-elevated: #1c2128;
+  --ssc-border: rgba(240, 246, 252, 0.1);
+  --ssc-border-active: rgba(240, 246, 252, 0.2);
+
+  --ssc-text: #e6edf3;
+  --ssc-text-secondary: #8b949e;
+  --ssc-text-muted: #6e7681;
+  --ssc-metric-value: #ffffff;
+
+  --ssc-accent: #22d3ee;
+  --ssc-accent-dim: rgba(34, 211, 238, 0.15);
+
+  --ssc-status-healthy: #3fb950;
+  --ssc-status-warning: #d29922;
+  --ssc-status-danger: #f97316;
+  --ssc-status-critical: #f85149;
+
+  --ssc-glow-healthy: rgba(63, 185, 80, 0.2);
+  --ssc-glow-warning: rgba(210, 153, 34, 0.2);
+  --ssc-glow-danger: rgba(249, 115, 22, 0.2);
+  --ssc-glow-critical: rgba(248, 81, 73, 0.25);
+
+  color: var(--ssc-text);
+  background: var(--ssc-bg-base);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root.light {
+  --ssc-bg-base: #f0f2f5;
+  --ssc-bg-surface: #ffffff;
+  --ssc-bg-elevated: #fafbfc;
+  --ssc-border: rgba(23, 32, 51, 0.1);
+  --ssc-border-active: rgba(23, 32, 51, 0.18);
+
+  --ssc-text: #1f2937;
+  --ssc-text-secondary: #6b7280;
+  --ssc-text-muted: #9ca3af;
+  --ssc-metric-value: #111827;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Shell */
+.ssc-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+/* Dashboard header */
+.ssc-dashboard-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ssc-dashboard-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ssc-text);
+}
+
+.ssc-kicker {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ssc-accent);
+}
+
+/* Metrics bar */
+.ssc-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.ssc-metric-card {
+  background: var(--ssc-bg-surface);
+  border: 1px solid var(--ssc-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.ssc-metric-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ssc-text-muted);
+  margin-bottom: 6px;
+}
+
+.ssc-metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ssc-metric-value);
+  line-height: 1.1;
+}
+
+.ssc-metric-value--accent {
+  color: var(--ssc-accent);
+}
+
+/* Grid */
+.ssc-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+}
+
+.ssc-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 280px;
+}
+
+/* Card */
+.ssc-card.ant-card {
+  border-radius: 8px;
+  background: var(--ssc-bg-surface);
+  border: 1px solid var(--ssc-border);
+  border-left: 3px solid var(--ssc-status-healthy);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.3s;
+}
+
+.ssc-card.ant-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.ssc-card .ant-card-body {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+/* Card header */
+.ssc-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ssc-card-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ssc-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ssc-card-head h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Card body row: ring + metrics */
+.ssc-card-body-row {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.ssc-card-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ssc-label {
+  display: block;
+  color: var(--ssc-text-muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ssc-card-metrics strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ssc-text);
+}
+
+/* Card footer */
+.ssc-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ssc-border);
+}
+
+.ssc-card-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ssc-toggle-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ssc-toggle-inline .ssc-label {
+  margin: 0;
+}
+
+/* Ring gauge */
+.ssc-ring-wrap {
+  flex-shrink: 0;
+}
+
+.ssc-ring-arc {
+  transition: stroke-dashoffset 0.8s ease-out, stroke 0.3s;
+}
+
+/* Badges */
+.ssc-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* History modal */
+.ssc-history-item {
+  display: grid;
+  gap: 4px;
+}
+
+.ssc-history-time {
+  color: var(--ssc-text-muted);
+  font-size: 13px;
+}
+
+.ssc-history-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--ssc-text);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reset modal */
+.ssc-reset-modal {
+  display: grid;
+  gap: 16px;
+}
+
+.ssc-reset-grid {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.ssc-reset-grid strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Animations */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ssc-card-animated {
+  animation: fadeSlideUp 0.4s ease-out both;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ssc-shell {
+    padding: 16px 12px 32px;
+  }
+
+  .ssc-metrics-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ssc-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ssc-card-body-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ssc-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .ssc-reset-grid {
+    flex-direction: column;
+  }
+}

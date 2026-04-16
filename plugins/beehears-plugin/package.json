@@ -1,0 +1,37 @@
+{
+  "name": "beehears-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=.env --import tsx/esm server.ts",
+    "build": "vite build",
+    "start": "node --import tsx server.ts",
+    "db:init": "tsx db/run-init.ts"
+  },
+  "dependencies": {
+    "antd": "^5.24.0",
+    "@tanstack/react-query": "^5.62.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "node-cron": "^3.0.3",
+    "pg": "^8.13.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "@lobehub/icons": "^1.40.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0"
+  }
+}
