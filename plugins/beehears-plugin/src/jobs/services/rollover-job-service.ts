@@ -56,16 +56,6 @@ export class RolloverJobService {
           continue;
         }
 
-        const carryAmount = subscription.daily_quota - subscription.current_used;
-        if (carryAmount <= 0) {
-          summary.skipCount += 1;
-          this.dependencies.logger.info('skip non-positive carry amount', {
-            ...row,
-            carryAmount,
-          });
-          continue;
-        }
-
         try {
           await this.dependencies.databaseClient.transaction(async (tx) => {
             const alreadyRolled = await this.dependencies.rolloverJobRepo.existsRolloverForDate(
@@ -86,22 +76,25 @@ export class RolloverJobService {
               now,
             );
 
-            const balanceCarryBefore = extension.balance_carry;
-            const balanceCarryAfter = balanceCarryBefore + carryAmount;
-            const quotaAfter = subscription.daily_quota + balanceCarryAfter;
+            const carryOpen = extension.balance_carry;
+            const nextCarry = Math.max(
+              carryOpen + subscription.daily_quota - subscription.current_used,
+              0,
+            );
+            const quotaAfter = subscription.daily_quota + nextCarry;
 
-            await this.dependencies.rolloverJobRepo.incrementBalanceCarry(
+            await this.dependencies.rolloverJobRepo.replaceBalanceCarry(
               tx,
               row.user_id,
               row.sub2api_subscription_id,
-              carryAmount,
+              nextCarry,
             );
 
             await this.dependencies.rolloverJobRepo.insertHistory(tx, {
               userId: row.user_id,
               subscriptionId: row.sub2api_subscription_id,
-              quotaBefore: carryAmount,
-              carryAmount,
+              quotaBefore: nextCarry,
+              carryAmount: nextCarry,
               quotaAfter,
             });
 

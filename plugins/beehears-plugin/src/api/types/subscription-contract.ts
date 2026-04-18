@@ -46,6 +46,7 @@ export type Sub2ApiEnvelope<T> = {
 export type Sub2ApiGroup = {
   id: number;
   name: string;
+  platform?: string | null;
   daily_limit_usd?: number | null;
 };
 
@@ -62,6 +63,7 @@ export type Sub2ApiSubscription = {
   id: number;
   user_id: number;
   plan_name: string;
+  platform: string;
   daily_quota: number;
   current_used: number;
   expires_at: string;
@@ -116,11 +118,30 @@ export type ResetHistoryRecord = {
   created_at: string;
 };
 
+export type SubscriptionHistoryRecord =
+  | {
+      event_type: 'rollover';
+      event_at: string;
+      quota_before: number;
+      carry_amount: number;
+      quota_after: number;
+    }
+  | {
+      event_type: 'reset';
+      event_at: string;
+      days_deducted: number;
+      expires_before: string;
+      expires_after: string;
+      reset_count_used: number;
+    };
+
 export type SubscriptionSummary = {
   id: number;
   plan_name: string;
+  category: string;
   daily_quota: number;
   current_used: number;
+  carry_open: number;
   balance_carry: number;
   available_quota: number;
   expires_at: string;
@@ -130,6 +151,19 @@ export type SubscriptionSummary = {
   reset_quota_30d: number;
   extra_days_deducted: number;
 };
+
+export function classifyPlanCategory(planName: string, platform?: string | null): string {
+  const normalizedPlatform = (platform ?? '').trim().toLowerCase();
+  if (normalizedPlatform === 'anthropic') return 'Claude';
+  if (normalizedPlatform === 'openai') return 'OpenAI';
+  if (normalizedPlatform === 'gemini') return 'Gemini';
+
+  const lower = planName.toLowerCase();
+  if (lower.includes('claude') || lower.includes('anthropic')) return 'Claude';
+  if (lower.includes('gpt') || lower.includes('openai') || lower.includes('chatgpt') || lower.includes('o1') || lower.includes('o3') || lower.includes('o4')) return 'OpenAI';
+  if (lower.includes('gemini') || lower.includes('google')) return 'Gemini';
+  return 'Other';
+}
 
 export type ResetQuotaSummary = {
   id: number;
@@ -174,6 +208,14 @@ export type OwnedSubscriptionSnapshot = {
   extension: SubscriptionExtensionRecord;
   rolloverSetting: RolloverSettingRecord | null;
   summary: SubscriptionSummary;
+};
+
+export type CarryFirstQuotaBreakdown = {
+  carry_open: number;
+  carry_remaining: number;
+  daily_remaining: number;
+  available_total: number;
+  total_quota: number;
 };
 
 export type RouteDefinition = {
@@ -290,6 +332,7 @@ export function mapSub2ApiSubscription(raw: RawSub2ApiSubscription): Sub2ApiSubs
     id: raw.id,
     user_id: raw.user_id,
     plan_name: raw.group?.name ?? `Subscription #${raw.id}`,
+    platform: raw.group?.platform ?? '',
     daily_quota: Number(raw.group?.daily_limit_usd ?? 0),
     current_used: Number(raw.daily_usage_usd ?? 0),
     expires_at: raw.expires_at,
@@ -346,8 +389,25 @@ export function normalizeResetState(
   };
 }
 
-export function calculateAvailableQuota(dailyQuota: number, balanceCarry: number, currentUsed: number) {
-  return Number(dailyQuota) + Number(balanceCarry) - Number(currentUsed);
+export function calculateCarryFirstQuota(
+  dailyQuota: number,
+  balanceCarry: number,
+  currentUsed: number,
+): CarryFirstQuotaBreakdown {
+  const carryOpen = Number(balanceCarry);
+  const used = Number(currentUsed);
+  const daily = Number(dailyQuota);
+  const carryRemaining = Math.max(carryOpen - used, 0);
+  const usedAfterCarry = Math.max(used - carryOpen, 0);
+  const dailyRemaining = Math.max(daily - usedAfterCarry, 0);
+
+  return {
+    carry_open: carryOpen,
+    carry_remaining: carryRemaining,
+    daily_remaining: dailyRemaining,
+    available_total: carryRemaining + dailyRemaining,
+    total_quota: carryOpen + daily,
+  };
 }
 
 export function calculateResetQuota30d(resetCount30d: number) {

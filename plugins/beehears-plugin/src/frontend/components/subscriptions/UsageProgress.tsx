@@ -1,4 +1,6 @@
+import type React from 'react';
 import { useMemo } from 'react';
+import { usePlugin } from '../../i18n/context';
 
 type UsageProgressProps = {
   currentUsed: number;
@@ -6,23 +8,26 @@ type UsageProgressProps = {
   size?: number;
 };
 
-const STROKE_WIDTH = 6;
+const STROKE_WIDTH = 4;
 
-export function getStatusColor(percent: number): string {
-  if (percent >= 95) return 'var(--ssc-status-critical)';
-  if (percent >= 80) return 'var(--ssc-status-danger)';
-  if (percent >= 60) return 'var(--ssc-status-warning)';
-  return 'var(--ssc-status-healthy)';
+function getGlowColor(currentUsed: number): string {
+  return currentUsed > 0 ? 'rgba(248, 113, 113, 0.4)' : 'rgba(52, 211, 153, 0.4)';
 }
 
-export function getStatusRawColor(percent: number): string {
-  if (percent >= 95) return '#f85149';
-  if (percent >= 80) return '#f97316';
-  if (percent >= 60) return '#d29922';
-  return '#3fb950';
+export function getUsageStateColor(currentUsed: number): string {
+  return currentUsed > 0 ? 'var(--ssc-status-critical)' : 'var(--ssc-status-healthy)';
+}
+
+export function getUsageStateRawColor(currentUsed: number): string {
+  return currentUsed > 0 ? '#f85149' : '#3fb950';
+}
+
+function getUsageTrackColor(currentUsed: number): string {
+  return currentUsed > 0 ? 'rgba(248, 113, 113, 0.24)' : 'rgba(52, 211, 153, 0.24)';
 }
 
 export function UsageProgress({ currentUsed, totalQuota, size = 100 }: UsageProgressProps) {
+  const { t } = usePlugin();
   const safeTotal = Math.max(totalQuota, 1);
   const percent = Math.min(100, (currentUsed / safeTotal) * 100);
 
@@ -33,9 +38,9 @@ export function UsageProgress({ currentUsed, totalQuota, size = 100 }: UsageProg
       radius: r,
       circumference: c,
       offset: c - (percent / 100) * c,
-      color: getStatusColor(percent),
+      color: getUsageStateColor(currentUsed),
     };
-  }, [size, percent]);
+  }, [size, percent, currentUsed]);
 
   const center = size / 2;
 
@@ -47,7 +52,7 @@ export function UsageProgress({ currentUsed, totalQuota, size = 100 }: UsageProg
           cy={center}
           r={radius}
           fill="none"
-          stroke="var(--ssc-border)"
+          stroke={getUsageTrackColor(currentUsed)}
           strokeWidth={STROKE_WIDTH}
         />
         <circle
@@ -62,10 +67,11 @@ export function UsageProgress({ currentUsed, totalQuota, size = 100 }: UsageProg
           strokeDashoffset={offset}
           strokeLinecap="round"
           transform={`rotate(-90 ${center} ${center})`}
+          style={{ '--ssc-ring-glow': getGlowColor(currentUsed), '--ssc-ring-circumference': circumference } as React.CSSProperties}
         />
         <text
           x={center}
-          y={center}
+          y={center - 6}
           textAnchor="middle"
           dominantBaseline="central"
           fill="var(--ssc-text)"
@@ -74,6 +80,17 @@ export function UsageProgress({ currentUsed, totalQuota, size = 100 }: UsageProg
           style={{ fontVariantNumeric: 'tabular-nums' }}
         >
           {percent.toFixed(0)}%
+        </text>
+        <text
+          x={center}
+          y={center + 12}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill="var(--ssc-text-muted)"
+          fontSize="10"
+          fontWeight="500"
+        >
+          {t.usage_label ?? 'used'}
         </text>
       </svg>
     </div>

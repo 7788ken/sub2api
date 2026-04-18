@@ -2,12 +2,12 @@ import type {
   ApiEnvelope,
   ResetQuotaSummary,
   ResetSubscriptionResponse,
-  RolloverHistoryRecord,
+  SubscriptionHistoryRecord,
   SubscriptionSummary,
   ToggleRolloverPayload,
   ToggleRolloverResponse,
 } from '../types/subscriptions';
-import { MOCK_SUBSCRIPTIONS, MOCK_ROLLOVER_HISTORY, mockResetQuota } from './mock-data';
+import { MOCK_SUBSCRIPTIONS, MOCK_SUBSCRIPTION_HISTORY, mockResetQuota } from './mock-data';
 
 /** When true, all API calls return mock data instead of hitting the real backend. */
 const USE_MOCK = new URLSearchParams(window.location.search).has('mock');
@@ -62,9 +62,9 @@ export function toggleRollover(id: number, body: ToggleRolloverPayload): Promise
   });
 }
 
-export function getRolloverHistory(id: number, limit = 10): Promise<RolloverHistoryRecord[]> {
-  if (USE_MOCK) return Promise.resolve(MOCK_ROLLOVER_HISTORY.slice(0, limit));
-  return request<RolloverHistoryRecord[]>(
+export function getRolloverHistory(id: number, limit = 10): Promise<SubscriptionHistoryRecord[]> {
+  if (USE_MOCK) return Promise.resolve(MOCK_SUBSCRIPTION_HISTORY.slice(0, limit));
+  return request<SubscriptionHistoryRecord[]>(
     `/api/subscriptions/${id}/rollover/history?limit=${limit}`,
   );
 }
@@ -89,4 +89,14 @@ export function resetSubscription(id: number): Promise<ResetSubscriptionResponse
   return request<ResetSubscriptionResponse>(`/api/subscriptions/${id}/reset`, {
     method: 'POST',
   });
+}
+
+export type AdminStats = {
+  totalSubscriptions: number;
+  validSubscriptions: number;
+};
+
+export function getAdminStats(): Promise<AdminStats> {
+  if (USE_MOCK) return Promise.resolve({ totalSubscriptions: 42, validSubscriptions: 30 });
+  return request<AdminStats>('/api/admin/stats');
 }

@@ -24,7 +24,7 @@ export function SubscriptionGrid({ subscriptions }: SubscriptionGridProps) {
         <SubscriptionCard
           key={subscription.id}
           subscription={subscription}
-          animationDelay={index * 80}
+          animationDelay={index * 100}
         />
       ))}
     </section>

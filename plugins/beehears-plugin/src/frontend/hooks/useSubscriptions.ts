@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  getAdminStats,
   getResetQuota,
   getRolloverHistory,
   getSubscription,
@@ -60,7 +61,17 @@ export function useResetSubscription() {
     onSuccess: (_, id) => {
       void queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       void queryClient.invalidateQueries({ queryKey: ['subscriptions', id] });
+      void queryClient.invalidateQueries({ queryKey: ['subscriptions', id, 'rollover-history'] });
       void queryClient.invalidateQueries({ queryKey: ['subscriptions', id, 'reset-quota'] });
     },
+  });
+}
+
+export function useAdminStats() {
+  return useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: getAdminStats,
+    retry: false,
+    staleTime: 60_000,
   });
 }

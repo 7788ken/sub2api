@@ -36,6 +36,11 @@ const __dirname = dirname(__filename);
 const PORT = Number(process.env.PLUGIN_PORT || 3001);
 const SUB2API_BASE_URL = process.env.SUB2API_BASE_URL || 'http://localhost:8080';
 const SUB2API_ADMIN_TOKEN = process.env.SUB2API_ADMIN_TOKEN || '';
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const BETA_PASSWORD = process.env.BETA_PASSWORD || '';
+const ADMIN_USER_IDS = new Set(
+  (process.env.ADMIN_USER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean).map(Number),
+);
 const DB_CONFIG = {
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 5432),
@@ -94,6 +99,61 @@ function toApiContext(req: express.Request): ApiRequestContext {
   };
 }
 
+type AdminSubscriptionsPage = {
+  total?: number;
+  items?: unknown[];
+};
+
+type AdminSubscriptionsResponse = {
+  data?: AdminSubscriptionsPage | unknown[];
+};
+
+type AdminStatsPayload = {
+  totalSubscriptions: number;
+  validSubscriptions: number;
+};
+
+function getAdminSubscriptionTotal(payload: AdminSubscriptionsResponse): number {
+  if (Array.isArray(payload.data)) {
+    return payload.data.length;
+  }
+
+  if (payload.data && typeof payload.data === 'object') {
+    const page = payload.data as AdminSubscriptionsPage;
+    if (typeof page.total === 'number' && Number.isFinite(page.total) && page.total >= 0) {
+      return page.total;
+    }
+    if (Array.isArray(page.items)) {
+      return page.items.length;
+    }
+  }
+
+  return 0;
+}
+
+async function fetchAdminSubscriptionTotal(
+  baseUrl: string,
+  adminToken: string,
+  status?: string,
+): Promise<number> {
+  const adminUrl = new URL('/api/v1/admin/subscriptions', baseUrl);
+  adminUrl.searchParams.set('page', '1');
+  adminUrl.searchParams.set('page_size', '1');
+  if (status) {
+    adminUrl.searchParams.set('status', status);
+  }
+
+  const adminRes = await fetch(adminUrl, {
+    headers: { 'x-api-key': adminToken },
+  });
+  if (!adminRes.ok) {
+    return 0;
+  }
+
+  const payload = (await adminRes.json()) as AdminSubscriptionsResponse;
+  return getAdminSubscriptionTotal(payload);
+}
+
 // --- 主函数 ---
 async function main() {
   // 1. 初始化数据库连接
@@ -144,6 +204,7 @@ async function main() {
     mergeService,
     rolloverSettingsRepository: rolloverSettingsRepo,
     rolloverHistoryRepository: rolloverHistoryRepo,
+    resetHistoryRepository: resetHistoryRepo,
     resetService,
   });
 
@@ -188,21 +249,76 @@ async function main() {
     res.json({ status: 'ok', service: 'beehears-plugin' });
   });
 
-  // 8. Vite dev middleware（开发模式下服务前端）
-  try {
-    const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-    console.log('[plugin] ✓ Vite dev middleware attached');
-  } catch (err) {
-    console.warn('[plugin] ⚠ Vite dev middleware not available, serving static files');
+  // 7.1 内测密码验证
+  app.post('/api/beta/verify', (req: express.Request, res: express.Response) => {
+    const { password } = req.body as { password?: string };
+    if (!BETA_PASSWORD) {
+      res.json({ success: true, data: null, error: null });
+      return;
+    }
+    if (password === BETA_PASSWORD) {
+      res.json({ success: true, data: null, error: null });
+    } else {
+      res.status(403).json({ success: false, data: null, error: { code: 'WRONG_PASSWORD', message: 'Wrong password' } });
+    }
+  });
+
+  // 7.2 管理员统计（有效订阅 / 全站订阅）
+  app.get('/api/admin/stats', async (req: express.Request, res: express.Response) => {
+    try {
+      const context = toApiContext(req);
+      const session = await sessionService.requireSession(context);
+      if (!ADMIN_USER_IDS.has(session.session.userId)) {
+        res.status(403).json({ success: false, data: null, error: { code: 'FORBIDDEN', message: 'Admin only' } });
+        return;
+      }
+      if (session.responseHeaders) {
+        for (const [key, value] of Object.entries(session.responseHeaders)) {
+          res.setHeader(key, value);
+        }
+      }
+      const stats: AdminStatsPayload = {
+        totalSubscriptions: 0,
+        validSubscriptions: 0,
+      };
+      if (SUB2API_ADMIN_TOKEN) {
+        const [totalSubscriptions, validSubscriptions] = await Promise.all([
+          fetchAdminSubscriptionTotal(SUB2API_BASE_URL, SUB2API_ADMIN_TOKEN),
+          fetchAdminSubscriptionTotal(SUB2API_BASE_URL, SUB2API_ADMIN_TOKEN, 'active'),
+        ]);
+        stats.totalSubscriptions = totalSubscriptions;
+        stats.validSubscriptions = validSubscriptions;
+      }
+      res.json({ success: true, data: stats, error: null });
+    } catch (err) {
+      console.error('[plugin] admin stats error:', err);
+      res.status(500).json({ success: false, data: null, error: { code: 'INTERNAL_ERROR', message: 'Failed to load admin stats' } });
+    }
+  });
+
+  // 8. 前端资源托管：开发环境走 Vite middleware，生产环境只走构建产物
+  if (!IS_PRODUCTION) {
+    try {
+      const { createServer: createViteServer } = await import('vite');
+      const vite = await createViteServer({
+        server: { middlewareMode: true },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+      console.log('[plugin] ✓ Vite dev middleware attached');
+    } catch (err) {
+      console.warn('[plugin] ⚠ Vite dev middleware not available, serving static files');
+      app.use(express.static(join(__dirname, 'dist', 'frontend')));
+      app.get('*', (_req, res) => {
+        res.sendFile(join(__dirname, 'dist', 'frontend', 'index.html'));
+      });
+    }
+  } else {
     app.use(express.static(join(__dirname, 'dist', 'frontend')));
     app.get('*', (_req, res) => {
       res.sendFile(join(__dirname, 'dist', 'frontend', 'index.html'));
     });
+    console.log('[plugin] ✓ Static frontend serving enabled');
   }
 
   // 9. 注册定时任务

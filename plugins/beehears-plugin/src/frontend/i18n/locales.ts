@@ -11,6 +11,8 @@ const zh = {
   dashboard_total_available: '总可用额度',
   dashboard_active_rollovers: '转结开启',
   dashboard_avg_usage: '平均用量',
+  dashboard_site_subs: '全站订阅',
+  dashboard_valid_site_subs: '有效订阅 / 全站订阅',
 
   // App states
   loading: '加载中…',
@@ -43,10 +45,16 @@ const zh = {
   usage_label: '今日用量',
 
   // RolloverHistoryModal
-  history_title_suffix: '最近 10 条转结记录',
+  history_title_suffix: '最近 10 条操作记录',
+  history_rollover_tag: '转结',
+  history_reset_tag: '重置',
   history_before: '转结前剩余',
   history_carry: '本次转结',
   history_after: '转结后总额',
+  history_reset_deduct: '扣减天数',
+  history_reset_count_used: '消耗次数',
+  history_reset_before: '重置前到期',
+  history_reset_after: '重置后到期',
 
   // ResetConfirmModal
   reset_title_suffix: '重置额度',
@@ -59,6 +67,19 @@ const zh = {
   reset_unit: '次',
   reset_confirm: '确认重置',
   reset_cancel: '取消',
+  reset_state_ready: '可执行',
+  reset_state_blocked: '不可重置',
+  reset_effect_usage_desc: '今日用量将归零',
+  reset_effect_carry_desc: '转结余额会被清空',
+  reset_quota_ready_desc: '本次操作会同时扣减本周与 30 天重置额度。',
+  reset_quota_blocked_desc: '当前本周或 30 天重置额度不足，暂时无法执行。',
+
+  // Beta gate
+  beta_title: '内测通道',
+  beta_desc: '本功能当前处于内测阶段，请输入内测密码进入。',
+  beta_placeholder: '内测密码',
+  beta_submit: '进入',
+  beta_wrong_password: '密码错误',
 } as const;
 
 export type Messages = { [K in keyof typeof zh]: string };
@@ -75,6 +96,8 @@ const en: Messages = {
   dashboard_total_available: 'Total Available',
   dashboard_active_rollovers: 'Active Rollovers',
   dashboard_avg_usage: 'Avg Usage',
+  dashboard_site_subs: 'Site Subs',
+  dashboard_valid_site_subs: 'Valid / Total Subs',
 
   // App states
   loading: 'Loading…',
@@ -107,10 +130,16 @@ const en: Messages = {
   usage_label: 'Today',
 
   // RolloverHistoryModal
-  history_title_suffix: 'Recent 10 Rollover Records',
+  history_title_suffix: 'Recent 10 Activity Records',
+  history_rollover_tag: 'Rollover',
+  history_reset_tag: 'Reset',
   history_before: 'Before',
   history_carry: 'Carry',
   history_after: 'After',
+  history_reset_deduct: 'Days Deducted',
+  history_reset_count_used: 'Usage Count',
+  history_reset_before: 'Expiry Before',
+  history_reset_after: 'Expiry After',
 
   // ResetConfirmModal
   reset_title_suffix: 'Reset Quota',
@@ -124,6 +153,19 @@ const en: Messages = {
   reset_unit: '',
   reset_confirm: 'Confirm Reset',
   reset_cancel: 'Cancel',
+  reset_state_ready: 'Ready',
+  reset_state_blocked: 'Unavailable',
+  reset_effect_usage_desc: 'Today usage will be reset to zero',
+  reset_effect_carry_desc: 'Rollover balance will be cleared',
+  reset_quota_ready_desc: 'This action will consume both weekly and 30-day reset quota.',
+  reset_quota_blocked_desc: 'Weekly or 30-day reset quota is exhausted, so reset is unavailable.',
+
+  // Beta gate
+  beta_title: 'Beta Access',
+  beta_desc: 'This feature is in beta. Please enter the access code.',
+  beta_placeholder: 'Access code',
+  beta_submit: 'Enter',
+  beta_wrong_password: 'Wrong password',
 };
 
 export const messages: Record<Locale, Messages> = { zh, en };

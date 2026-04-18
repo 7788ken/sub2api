@@ -1,46 +1,148 @@
-:root {
-  --ssc-bg-base: #0d1117;
-  --ssc-bg-surface: #161b22;
-  --ssc-bg-elevated: #1c2128;
-  --ssc-border: rgba(240, 246, 252, 0.1);
-  --ssc-border-active: rgba(240, 246, 252, 0.2);
+/* ==========================================================================
+   BeeHears Self-Service Center — Design System
+   Modern Minimal SaaS (Vercel/Linear inspired)
+   Teal/Cyan accent · Glassmorphism · Subtle gradients
+   ========================================================================== */
 
-  --ssc-text: #e6edf3;
-  --ssc-text-secondary: #8b949e;
-  --ssc-text-muted: #6e7681;
+/* --------------------------------------------------------------------------
+   1. COLOR SYSTEM — Dark Theme (default)
+   -------------------------------------------------------------------------- */
+:root {
+  --ssc-bg-base: #09090b;
+  --ssc-bg-surface: #18181b;
+  --ssc-bg-elevated: #27272a;
+  --ssc-border: rgba(255, 255, 255, 0.06);
+  --ssc-border-active: rgba(255, 255, 255, 0.12);
+
+  --ssc-text: #fafafa;
+  --ssc-text-secondary: #a1a1aa;
+  --ssc-text-muted: #71717a;
   --ssc-metric-value: #ffffff;
 
-  --ssc-accent: #22d3ee;
-  --ssc-accent-dim: rgba(34, 211, 238, 0.15);
+  --ssc-accent: #06b6d4;
+  --ssc-accent-light: #22d3ee;
+  --ssc-accent-lighter: #67e8f9;
+  --ssc-accent-dim: rgba(6, 182, 212, 0.12);
+  --ssc-accent-glow: rgba(6, 182, 212, 0.15);
+  --ssc-gradient-accent: linear-gradient(135deg, #06b6d4, #22d3ee, #67e8f9);
 
-  --ssc-status-healthy: #3fb950;
-  --ssc-status-warning: #d29922;
-  --ssc-status-danger: #f97316;
-  --ssc-status-critical: #f85149;
+  --ssc-status-healthy: #34d399;
+  --ssc-status-warning: #fbbf24;
+  --ssc-status-danger: #fb923c;
+  --ssc-status-critical: #f87171;
 
-  --ssc-glow-healthy: rgba(63, 185, 80, 0.2);
-  --ssc-glow-warning: rgba(210, 153, 34, 0.2);
-  --ssc-glow-danger: rgba(249, 115, 22, 0.2);
-  --ssc-glow-critical: rgba(248, 81, 73, 0.25);
+  --ssc-glow-healthy: rgba(52, 211, 153, 0.2);
+  --ssc-glow-warning: rgba(251, 191, 36, 0.2);
+  --ssc-glow-danger: rgba(251, 146, 60, 0.2);
+  --ssc-glow-critical: rgba(248, 113, 113, 0.2);
+
+  /* Design tokens */
+  --ssc-radius-sm: 8px;
+  --ssc-radius-md: 12px;
+  --ssc-radius-lg: 16px;
+  --ssc-radius-xl: 20px;
+
+  --ssc-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --ssc-shadow-card-hover: 0 8px 32px rgba(6, 182, 212, 0.12), 0 0 0 1px rgba(6, 182, 212, 0.15);
+
+  --ssc-glass-bg: rgba(24, 24, 27, 0.6);
+  --ssc-glass-border: rgba(255, 255, 255, 0.06);
+  --ssc-ring-track: rgba(255, 255, 255, 0.08);
+  --ssc-reset-dialog-surface:
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+    var(--ssc-bg-surface);
+  --ssc-reset-dialog-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
+  --ssc-reset-head-bg:
+    linear-gradient(135deg, rgba(248, 113, 113, 0.18), rgba(251, 146, 60, 0.08) 42%, rgba(255, 255, 255, 0.02) 100%);
+  --ssc-reset-head-border: rgba(248, 113, 113, 0.18);
+  --ssc-reset-kicker-bg: rgba(127, 29, 29, 0.16);
+  --ssc-reset-kicker-text: #fca5a5;
+  --ssc-reset-ready-bg: rgba(22, 163, 74, 0.18);
+  --ssc-reset-ready-border: rgba(34, 197, 94, 0.2);
+  --ssc-reset-ready-text: #bbf7d0;
+  --ssc-reset-blocked-bg: rgba(127, 29, 29, 0.22);
+  --ssc-reset-blocked-border: rgba(248, 113, 113, 0.22);
+  --ssc-reset-blocked-text: #fecaca;
+  --ssc-reset-impact-danger-bg:
+    linear-gradient(180deg, rgba(248, 113, 113, 0.1), rgba(248, 113, 113, 0.02)),
+    var(--ssc-bg-elevated);
+  --ssc-reset-impact-danger-border: rgba(248, 113, 113, 0.14);
+  --ssc-reset-compare-bg: var(--ssc-bg-elevated);
+  --ssc-reset-compare-border: var(--ssc-border);
+  --ssc-reset-next-bg:
+    linear-gradient(180deg, rgba(6, 182, 212, 0.12), rgba(6, 182, 212, 0.03)),
+    var(--ssc-bg-elevated);
+  --ssc-reset-next-border: rgba(6, 182, 212, 0.18);
+  --ssc-reset-quota-bg: rgba(6, 182, 212, 0.06);
+  --ssc-reset-quota-border: rgba(6, 182, 212, 0.12);
+  --ssc-reset-chip-bg: rgba(255, 255, 255, 0.03);
+  --ssc-reset-chip-border: var(--ssc-border);
 
   color: var(--ssc-text);
   background: var(--ssc-bg-base);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* --------------------------------------------------------------------------
+   2. COLOR SYSTEM — Light Theme
+   -------------------------------------------------------------------------- */
 :root.light {
-  --ssc-bg-base: #f0f2f5;
+  --ssc-bg-base: #f4f6fb;
   --ssc-bg-surface: #ffffff;
-  --ssc-bg-elevated: #fafbfc;
-  --ssc-border: rgba(23, 32, 51, 0.1);
-  --ssc-border-active: rgba(23, 32, 51, 0.18);
+  --ssc-bg-elevated: #f2f5fa;
+  --ssc-border: rgba(15, 23, 42, 0.08);
+  --ssc-border-active: rgba(15, 118, 110, 0.18);
 
-  --ssc-text: #1f2937;
-  --ssc-text-secondary: #6b7280;
-  --ssc-text-muted: #9ca3af;
-  --ssc-metric-value: #111827;
+  --ssc-text: #0f172a;
+  --ssc-text-secondary: #334155;
+  --ssc-text-muted: #64748b;
+  --ssc-metric-value: #0f172a;
+
+  --ssc-accent: #0f766e;
+  --ssc-accent-light: #14b8a6;
+  --ssc-accent-lighter: #67e8f9;
+  --ssc-accent-dim: rgba(20, 184, 166, 0.1);
+  --ssc-accent-glow: rgba(15, 118, 110, 0.14);
+  --ssc-gradient-accent: linear-gradient(135deg, #0f766e, #0ea5e9, #38bdf8);
+
+  --ssc-shadow-card: 0 10px 30px rgba(148, 163, 184, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
+  --ssc-shadow-card-hover: 0 18px 40px rgba(14, 165, 233, 0.12), 0 0 0 1px rgba(15, 118, 110, 0.1);
+
+  --ssc-glass-bg: rgba(255, 255, 255, 0.78);
+  --ssc-glass-border: rgba(148, 163, 184, 0.16);
+  --ssc-ring-track: rgba(15, 23, 42, 0.14);
+  --ssc-reset-dialog-surface:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+  --ssc-reset-dialog-shadow: 0 24px 56px rgba(148, 163, 184, 0.2);
+  --ssc-reset-head-bg:
+    linear-gradient(180deg, rgba(20, 184, 166, 0.08) 0%, rgba(255, 255, 255, 0.92) 100%);
+  --ssc-reset-head-border: rgba(15, 118, 110, 0.14);
+  --ssc-reset-kicker-bg: rgba(20, 184, 166, 0.12);
+  --ssc-reset-kicker-text: #0f766e;
+  --ssc-reset-ready-bg: #dcfce7;
+  --ssc-reset-ready-border: rgba(22, 163, 74, 0.16);
+  --ssc-reset-ready-text: #166534;
+  --ssc-reset-blocked-bg: #fff7ed;
+  --ssc-reset-blocked-border: rgba(217, 119, 6, 0.18);
+  --ssc-reset-blocked-text: #b45309;
+  --ssc-reset-impact-danger-bg:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  --ssc-reset-impact-danger-border: #dbe4f0;
+  --ssc-reset-compare-bg: #f2f5fa;
+  --ssc-reset-compare-border: #dbe4f0;
+  --ssc-reset-next-bg:
+    linear-gradient(180deg, rgba(14, 165, 233, 0.1) 0%, rgba(240, 253, 250, 0.95) 100%);
+  --ssc-reset-next-border: rgba(14, 165, 233, 0.28);
+  --ssc-reset-quota-bg: linear-gradient(180deg, rgba(15, 118, 110, 0.05) 0%, rgba(255, 255, 255, 0.96) 100%);
+  --ssc-reset-quota-border: rgba(15, 118, 110, 0.14);
+  --ssc-reset-chip-bg: #ffffff;
+  --ssc-reset-chip-border: #dbe4f0;
 }
 
+/* --------------------------------------------------------------------------
+   3. GLOBAL BASE
+   -------------------------------------------------------------------------- */
 * {
   box-sizing: border-box;
 }
@@ -48,20 +150,55 @@
 body {
   margin: 0;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Shell */
+/* --------------------------------------------------------------------------
+   4. SHELL LAYOUT
+   -------------------------------------------------------------------------- */
 .ssc-shell {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 20px 48px;
+  padding: 32px 24px 64px;
 }
 
-/* Dashboard header */
+/* --------------------------------------------------------------------------
+   5. PAGE HEADER — New .ssc-header block
+   -------------------------------------------------------------------------- */
+.ssc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.ssc-header-content h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ssc-text);
+  letter-spacing: -0.02em;
+}
+
+.ssc-header-content p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--ssc-text-secondary);
+  line-height: 1.5;
+}
+
+.ssc-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Legacy header — backward compatible */
 .ssc-dashboard-header {
   display: flex;
   align-items: baseline;
@@ -85,33 +222,51 @@ body {
   color: var(--ssc-accent);
 }
 
-/* Metrics bar */
+/* --------------------------------------------------------------------------
+   6. METRICS BAR — Bento Grid
+   -------------------------------------------------------------------------- */
 .ssc-metrics-bar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(var(--ssc-metrics-cols, 4), 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
-.ssc-metric-card {
+.ssc-metric-card,
+.ssc-quota-type-card {
+  background: var(--ssc-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--ssc-glass-border);
+  border-radius: var(--ssc-radius-lg);
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.ssc-quota-type-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ssc-metric-card:hover,
+.ssc-quota-type-card:hover {
+  border-color: var(--ssc-border-active);
   background: var(--ssc-bg-surface);
-  border: 1px solid var(--ssc-border);
-  border-radius: 8px;
-  padding: 16px;
 }
 
 .ssc-metric-label {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--ssc-text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .ssc-metric-value {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--ssc-metric-value);
@@ -122,7 +277,9 @@ body {
   color: var(--ssc-accent);
 }
 
-/* Grid */
+/* --------------------------------------------------------------------------
+   7. GRID LAYOUT
+   -------------------------------------------------------------------------- */
 .ssc-grid {
   display: grid;
   gap: 16px;
@@ -136,27 +293,50 @@ body {
   min-height: 280px;
 }
 
-/* Card */
+/* --------------------------------------------------------------------------
+   8. CARD — Modern Glassmorphism
+   -------------------------------------------------------------------------- */
 .ssc-card.ant-card {
-  border-radius: 8px;
-  background: var(--ssc-bg-surface);
-  border: 1px solid var(--ssc-border);
-  border-left: 3px solid var(--ssc-status-healthy);
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.3s;
+  border-radius: var(--ssc-radius-lg);
+  background: var(--ssc-glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--ssc-glass-border);
+  border-left: none;
+  box-shadow: var(--ssc-shadow-card);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Top gradient status bar */
+.ssc-card.ant-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--ssc-card-status-color, var(--ssc-status-healthy)), transparent);
+  opacity: 0.8;
 }
 
 .ssc-card.ant-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(-4px);
+  box-shadow: var(--ssc-shadow-card-hover);
+  border-color: rgba(6, 182, 212, 0.15);
 }
 
 .ssc-card .ant-card-body {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   padding: 20px;
 }
 
-/* Card header */
+/* --------------------------------------------------------------------------
+   9. CARD HEADER
+   -------------------------------------------------------------------------- */
 .ssc-card-head {
   display: flex;
   justify-content: space-between;
@@ -187,11 +367,101 @@ body {
   text-overflow: ellipsis;
 }
 
-/* Card body row: ring + metrics */
+/* --------------------------------------------------------------------------
+   10. CARD BODY — Main content area
+   -------------------------------------------------------------------------- */
+
+/* Main content: ring on left, data on right */
+.ssc-card-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  background: var(--ssc-bg-elevated);
+  border-radius: var(--ssc-radius-md);
+}
+
+/* Right side of main content */
+.ssc-card-data {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Available quota — hero number */
+.ssc-card-available-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ssc-available-value {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--ssc-gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+
+.ssc-available-label-inline {
+  font-size: 13px;
+  color: var(--ssc-text-secondary);
+  font-weight: 500;
+}
+
+/* Stats row: compact 2-line items */
+.ssc-card-stats-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ssc-card-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ssc-card-stat-item .ssc-label {
+  font-size: 10px;
+  margin-bottom: 0;
+}
+
+.ssc-card-stat-item strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ssc-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ssc-card-stat-divider {
+  width: 1px;
+  background: var(--ssc-border);
+  align-self: stretch;
+}
+
+/* Legacy card body — backward compatible */
 .ssc-card-body-row {
   display: flex;
   gap: 20px;
   align-items: center;
+}
+
+.ssc-card-available-highlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: var(--ssc-radius-sm);
+  background: var(--ssc-accent-dim);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  min-width: 80px;
 }
 
 .ssc-card-metrics {
@@ -200,14 +470,6 @@ body {
   gap: 8px 20px;
   flex: 1;
   min-width: 0;
-}
-
-.ssc-label {
-  display: block;
-  color: var(--ssc-text-muted);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .ssc-card-metrics strong {
@@ -219,13 +481,27 @@ body {
   color: var(--ssc-text);
 }
 
-/* Card footer */
+/* --------------------------------------------------------------------------
+   11. LABEL — Universal
+   -------------------------------------------------------------------------- */
+.ssc-label {
+  display: block;
+  color: var(--ssc-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   12. CARD FOOTER
+   -------------------------------------------------------------------------- */
 .ssc-card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  padding-top: 12px;
+  padding-top: 16px;
   border-top: 1px solid var(--ssc-border);
 }
 
@@ -245,94 +521,544 @@ body {
   margin: 0;
 }
 
-/* Ring gauge */
+/* --------------------------------------------------------------------------
+   13. RING GAUGE
+   -------------------------------------------------------------------------- */
 .ssc-ring-wrap {
   flex-shrink: 0;
+  position: relative;
 }
 
 .ssc-ring-arc {
-  transition: stroke-dashoffset 0.8s ease-out, stroke 0.3s;
+  transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s ease;
+  filter: drop-shadow(0 0 4px var(--ssc-ring-glow, rgba(52, 211, 153, 0.3)));
 }
 
-/* Badges */
+/* --------------------------------------------------------------------------
+   14. BADGES
+   -------------------------------------------------------------------------- */
 .ssc-badges {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-/* History modal */
-.ssc-history-item {
-  display: grid;
-  gap: 4px;
-}
-
-.ssc-history-time {
-  color: var(--ssc-text-muted);
-  font-size: 13px;
-}
-
-.ssc-history-values {
+/* --------------------------------------------------------------------------
+   15. WARNING BLOCK (Modals)
+   -------------------------------------------------------------------------- */
+.ssc-warning-block {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
-  color: var(--ssc-text);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
+  padding: 16px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: var(--ssc-radius-md);
 }
 
-/* Reset modal */
+.ssc-warning-block-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  color: #fbbf24;
+}
+
+.ssc-warning-block h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ssc-text);
+}
+
+.ssc-warning-block p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ssc-text-secondary);
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+   16. COMPARE GRID (Expiry modals)
+   -------------------------------------------------------------------------- */
+.ssc-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.ssc-compare-card {
+  padding: 14px 16px;
+  background: var(--ssc-bg-elevated);
+  border-radius: var(--ssc-radius-md);
+  text-align: center;
+}
+
+.ssc-compare-arrow {
+  color: var(--ssc-text-muted);
+  font-size: 18px;
+}
+
+/* --------------------------------------------------------------------------
+   17. TIMELINE (Rollover history)
+   -------------------------------------------------------------------------- */
+.ssc-timeline {
+  padding: 4px 0;
+}
+
+.ssc-timeline-item {
+  display: flex;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ssc-border);
+}
+
+.ssc-timeline-item:last-child {
+  border-bottom: none;
+}
+
+.ssc-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ssc-accent);
+  margin-top: 5px;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px var(--ssc-accent-dim);
+}
+
+.ssc-timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   18. RESET MODAL
+   -------------------------------------------------------------------------- */
 .ssc-reset-modal {
   display: grid;
-  gap: 16px;
+  gap: 18px;
+  padding: 22px;
 }
 
-.ssc-reset-grid {
+.ssc-reset-dialog .ant-modal-content {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--ssc-reset-dialog-surface);
+  border: 1px solid var(--ssc-glass-border);
+  box-shadow: var(--ssc-reset-dialog-shadow);
+}
+
+.ssc-reset-dialog .ant-modal-body {
+  padding: 0;
+}
+
+.ssc-reset-dialog .ant-modal-close {
+  top: 14px;
+  inset-inline-end: 14px;
+  color: var(--ssc-text-secondary);
+}
+
+.ssc-reset-loading {
+  padding: 24px;
+}
+
+.ssc-reset-head {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: var(--ssc-radius-lg);
+  background: var(--ssc-reset-head-bg);
+  border: 1px solid var(--ssc-reset-head-border);
+}
+
+.ssc-reset-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--ssc-reset-kicker-bg);
+  color: var(--ssc-reset-kicker-text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ssc-reset-title-row {
   display: flex;
-  gap: 16px;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-.ssc-reset-grid strong {
-  display: block;
-  margin-top: 4px;
+.ssc-reset-title-block h3 {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ssc-text);
+}
+
+.ssc-reset-title-block p {
+  margin: 8px 0 0;
   font-size: 15px;
-  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  color: var(--ssc-text-secondary);
 }
 
-/* Animations */
+.ssc-reset-state {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ssc-reset-state.is-ready {
+  color: var(--ssc-reset-ready-text);
+  background: var(--ssc-reset-ready-bg);
+  border: 1px solid var(--ssc-reset-ready-border);
+}
+
+.ssc-reset-state.is-blocked {
+  color: var(--ssc-reset-blocked-text);
+  background: var(--ssc-reset-blocked-bg);
+  border: 1px solid var(--ssc-reset-blocked-border);
+}
+
+.ssc-reset-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ssc-text-muted);
+}
+
+.ssc-reset-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ssc-reset-impact-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--ssc-radius-lg);
+  background: var(--ssc-bg-elevated);
+  border: 1px solid var(--ssc-border);
+}
+
+.ssc-reset-impact-card.is-danger {
+  background: var(--ssc-reset-impact-danger-bg);
+  border-color: var(--ssc-reset-impact-danger-border);
+}
+
+.ssc-reset-impact-card strong {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ssc-text);
+}
+
+.ssc-reset-impact-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ssc-text-secondary);
+}
+
+.ssc-reset-modal .ssc-compare-card {
+  padding: 16px 18px;
+  background: var(--ssc-reset-compare-bg);
+  border: 1px solid var(--ssc-reset-compare-border);
+  border-radius: var(--ssc-radius-lg);
+  text-align: left;
+}
+
+.ssc-reset-modal .ssc-compare-card.is-next {
+  background: var(--ssc-reset-next-bg);
+  border-color: var(--ssc-reset-next-border);
+}
+
+.ssc-reset-modal .ssc-compare-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ssc-text);
+}
+
+.ssc-reset-quota-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--ssc-radius-lg);
+  background: var(--ssc-reset-quota-bg);
+  border: 1px solid var(--ssc-reset-quota-border);
+}
+
+.ssc-reset-quota-copy p {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ssc-text-secondary);
+}
+
+.ssc-reset-quota-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ssc-reset-quota-chip {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--ssc-radius-md);
+  background: var(--ssc-reset-chip-bg);
+  border: 1px solid var(--ssc-reset-chip-border);
+}
+
+.ssc-reset-quota-chip span {
+  font-size: 12px;
+  color: var(--ssc-text-muted);
+}
+
+.ssc-reset-quota-chip strong {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ssc-text);
+}
+
+.ssc-reset-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.ssc-reset-confirm-btn.ant-btn {
+  min-width: 124px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   20. QUOTA TYPE CARDS (extended)
+   -------------------------------------------------------------------------- */
+.ssc-quota-type-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ssc-quota-type-name {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ssc-text-muted);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ssc-quota-type-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ssc-accent);
+  line-height: 1.1;
+}
+
+.ssc-quota-type-total {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ssc-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   21. ADMIN BADGE
+   -------------------------------------------------------------------------- */
+.ssc-admin-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ssc-accent);
+  background: var(--ssc-accent-dim);
+  border-radius: 4px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.ssc-admin-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ssc-accent);
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   22. PLAN ICON FALLBACK
+   -------------------------------------------------------------------------- */
+.ssc-plan-icon-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--ssc-bg-elevated);
+  border: 1px solid var(--ssc-border);
+  color: var(--ssc-text-muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   23. BETA GATE
+   -------------------------------------------------------------------------- */
+.ssc-beta-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 24px;
+  padding: 20px;
+}
+
+.ssc-beta-gate h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ssc-text);
+}
+
+.ssc-beta-gate p {
+  margin: 0;
+  color: var(--ssc-text-muted);
+  font-size: 14px;
+}
+
+.ssc-beta-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* --------------------------------------------------------------------------
+   24. ANIMATIONS
+   -------------------------------------------------------------------------- */
 @keyframes fadeSlideUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(20px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .ssc-card-animated {
-  animation: fadeSlideUp 0.4s ease-out both;
+  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Responsive */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ssc-shimmer {
+  background: linear-gradient(90deg, var(--ssc-bg-surface) 25%, var(--ssc-bg-elevated) 50%, var(--ssc-bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--ssc-radius-md);
+}
+
+@keyframes ringProgress {
+  from { stroke-dashoffset: var(--ssc-ring-circumference); }
+}
+
+/* --------------------------------------------------------------------------
+   25. RESPONSIVE — Tablet (≤1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .ssc-metrics-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   26. RESPONSIVE — Mobile (≤768px)
+   -------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   .ssc-shell {
-    padding: 16px 12px 32px;
+    padding: 20px 16px 40px;
+  }
+
+  .ssc-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ssc-header-content h1 {
+    font-size: 22px;
   }
 
   .ssc-metrics-bar {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 12px;
+    padding-bottom: 4px;
+  }
+
+  .ssc-metrics-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ssc-metric-card,
+  .ssc-quota-type-card {
+    min-width: 160px;
+    flex-shrink: 0;
   }
 
   .ssc-grid {
     grid-template-columns: 1fr;
   }
 
-  .ssc-card-body-row {
+  .ssc-card .ant-card-body {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .ssc-card-main {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    padding: 12px;
+    gap: 14px;
+  }
+
+  .ssc-card-stats-row {
+    gap: 12px;
+  }
+
+  .ssc-card-stat-divider {
+    display: none;
   }
 
   .ssc-card-footer {
@@ -341,7 +1067,28 @@ body {
     gap: 10px;
   }
 
-  .ssc-reset-grid {
+  .ssc-compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ssc-reset-modal {
+    padding: 18px;
+  }
+
+  .ssc-reset-title-row,
+  .ssc-reset-actions {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ssc-reset-impact-grid,
+  .ssc-reset-quota-chips {
+    grid-template-columns: 1fr;
+  }
+
+  .ssc-card-available-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
   }
 }

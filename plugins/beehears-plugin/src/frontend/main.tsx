@@ -33,11 +33,11 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         theme={{
           algorithm: themeMode === 'light' ? antTheme.defaultAlgorithm : antTheme.darkAlgorithm,
           token: {
-            colorPrimary: '#22d3ee',
-            borderRadius: 8,
-            colorInfo: '#22d3ee',
-            colorBgContainer: themeMode === 'light' ? '#ffffff' : '#161b22',
-            colorBgElevated: themeMode === 'light' ? '#fafbfc' : '#1c2128',
+            colorPrimary: '#06b6d4',
+            borderRadius: 12,
+            colorInfo: '#06b6d4',
+            colorBgContainer: themeMode === 'light' ? '#ffffff' : '#18181b',
+            colorBgElevated: themeMode === 'light' ? '#f4f4f5' : '#27272a',
           },
         }}
       >

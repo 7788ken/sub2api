@@ -1,8 +1,9 @@
 import type {
   ResetQuotaSummary,
-  RolloverHistoryRecord,
+  SubscriptionHistoryRecord,
   SubscriptionSummary,
 } from '../types/subscriptions';
+import { getPlanCategory } from '../utils/plan-icons';
 
 const now = new Date();
 const future = (days: number) => {
@@ -11,25 +12,31 @@ const future = (days: number) => {
   return d.toISOString().split('T')[0];
 };
 
+function mock(base: Omit<SubscriptionSummary, 'category'>): SubscriptionSummary {
+  return { ...base, category: getPlanCategory(base.plan_name) ?? 'Other' };
+}
+
 export const MOCK_SUBSCRIPTIONS: SubscriptionSummary[] = [
-  {
+  mock({
     id: 1001,
-    plan_name: 'Pro Plan',
+    plan_name: 'Claude Sonnet',
     daily_quota: 200,
     current_used: 74,
-    balance_carry: 45,
+    carry_open: 45,
+    balance_carry: 0,
     available_quota: 171,
     expires_at: future(60),
     virtual_expires_at: future(58),
     rollover_enabled: true,
     reset_quota_weekly: 1,
     reset_quota_30d: 2,
-  },
-  {
+  }),
+  mock({
     id: 1002,
-    plan_name: 'Starter Plan',
+    plan_name: 'GPT-4o',
     daily_quota: 50,
     current_used: 50,
+    carry_open: 0,
     balance_carry: 0,
     available_quota: 0,
     expires_at: future(30),
@@ -37,28 +44,29 @@ export const MOCK_SUBSCRIPTIONS: SubscriptionSummary[] = [
     rollover_enabled: false,
     reset_quota_weekly: 1,
     reset_quota_30d: 3,
-  },
-  {
+  }),
+  mock({
     id: 1003,
-    plan_name: 'Enterprise Plan',
+    plan_name: 'Gemini Pro',
     daily_quota: 1000,
     current_used: 328,
-    balance_carry: 120,
+    carry_open: 120,
+    balance_carry: 0,
     available_quota: 792,
     expires_at: future(90),
     virtual_expires_at: future(87),
     rollover_enabled: true,
     reset_quota_weekly: 0,
     reset_quota_30d: 1,
-  },
+  }),
 ];
 
-export const MOCK_ROLLOVER_HISTORY: RolloverHistoryRecord[] = [
-  { rolled_at: future(-1), quota_before: 45, carry_amount: 45, quota_after: 245 },
-  { rolled_at: future(-2), quota_before: 30, carry_amount: 30, quota_after: 230 },
-  { rolled_at: future(-3), quota_before: 68, carry_amount: 68, quota_after: 268 },
-  { rolled_at: future(-4), quota_before: 12, carry_amount: 12, quota_after: 212 },
-  { rolled_at: future(-5), quota_before: 55, carry_amount: 55, quota_after: 255 },
+export const MOCK_SUBSCRIPTION_HISTORY: SubscriptionHistoryRecord[] = [
+  { event_type: 'rollover', event_at: future(-1), quota_before: 45, carry_amount: 45, quota_after: 245 },
+  { event_type: 'reset', event_at: future(-2), days_deducted: 1, expires_before: future(60), expires_after: future(59), reset_count_used: 1 },
+  { event_type: 'rollover', event_at: future(-3), quota_before: 68, carry_amount: 68, quota_after: 268 },
+  { event_type: 'rollover', event_at: future(-4), quota_before: 12, carry_amount: 12, quota_after: 212 },
+  { event_type: 'reset', event_at: future(-5), days_deducted: 1, expires_before: future(42), expires_after: future(41), reset_count_used: 2 },
 ];
 
 export function mockResetQuota(id: number): ResetQuotaSummary {

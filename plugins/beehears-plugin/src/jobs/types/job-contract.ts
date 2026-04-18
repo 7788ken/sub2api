@@ -84,11 +84,11 @@ export type RolloverJobServiceDependencies = {
       subscriptionId: number,
       businessDate: string,
     ): Promise<boolean>;
-    incrementBalanceCarry(
+    replaceBalanceCarry(
       executor: SqlExecutor,
       userId: number,
       subscriptionId: number,
-      carryAmount: number,
+      balanceCarry: number,
     ): Promise<SubscriptionExtensionRecord | null>;
     insertHistory(
       executor: SqlExecutor,

@@ -13,8 +13,10 @@ export type ApiEnvelope<T> = {
 export type SubscriptionSummary = {
   id: number;
   plan_name: string;
+  category: string;
   daily_quota: number;
   current_used: number;
+  carry_open: number;
   balance_carry: number;
   available_quota: number;
   expires_at: string;
@@ -24,12 +26,22 @@ export type SubscriptionSummary = {
   reset_quota_30d: number;
 };
 
-export type RolloverHistoryRecord = {
-  rolled_at: string;
-  quota_before: number;
-  carry_amount: number;
-  quota_after: number;
-};
+export type SubscriptionHistoryRecord =
+  | {
+      event_type: 'rollover';
+      event_at: string;
+      quota_before: number;
+      carry_amount: number;
+      quota_after: number;
+    }
+  | {
+      event_type: 'reset';
+      event_at: string;
+      days_deducted: number;
+      expires_before: string;
+      expires_after: string;
+      reset_count_used: number;
+    };
 
 export type ResetQuotaSummary = {
   id: number;

@@ -1,8 +1,9 @@
 import {
   PluginApiError,
-  calculateAvailableQuota,
+  calculateCarryFirstQuota,
   calculateResetQuota30d,
   calculateResetQuotaWeekly,
+  classifyPlanCategory,
   createDefaultExtension,
   normalizeResetState,
   type OwnedSubscriptionSnapshot,
@@ -81,18 +82,21 @@ export function buildSubscriptionSummary(
 ): SubscriptionSummary {
   const resetQuota30d = calculateResetQuota30d(extension.reset_count_30d);
   const resetQuotaWeekly = calculateResetQuotaWeekly(extension.reset_count_weekly);
+  const quotaBreakdown = calculateCarryFirstQuota(
+    subscription.daily_quota,
+    extension.balance_carry,
+    subscription.current_used,
+  );
 
   return {
     id: subscription.id,
     plan_name: subscription.plan_name,
+    category: classifyPlanCategory(subscription.plan_name, subscription.platform),
     daily_quota: subscription.daily_quota,
     current_used: subscription.current_used,
-    balance_carry: Number(extension.balance_carry),
-    available_quota: calculateAvailableQuota(
-      subscription.daily_quota,
-      extension.balance_carry,
-      subscription.current_used,
-    ),
+    carry_open: quotaBreakdown.carry_open,
+    balance_carry: quotaBreakdown.carry_remaining,
+    available_quota: quotaBreakdown.available_total,
     expires_at: subscription.expires_at,
     virtual_expires_at: subscription.expires_at,
     rollover_enabled: rolloverSetting?.enabled ?? false,

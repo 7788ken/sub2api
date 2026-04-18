@@ -47,17 +47,17 @@ export class RolloverJobRepository {
     return result.rowCount > 0;
   }
 
-  async incrementBalanceCarry(
+  async replaceBalanceCarry(
     executor: SqlExecutor,
     userId: number,
     subscriptionId: number,
-    carryAmount: number,
+    balanceCarry: number,
   ): Promise<SubscriptionExtensionRecord | null> {
     const result = await executor.query<SubscriptionExtensionRecord>(
       `
         UPDATE plugin_beehears.subscription_extensions
         SET
-          balance_carry = balance_carry + $3,
+          balance_carry = $3,
           updated_at = NOW()
         WHERE user_id = $1
           AND sub2api_subscription_id = $2
@@ -74,7 +74,7 @@ export class RolloverJobRepository {
           created_at,
           updated_at
       `,
-      [userId, subscriptionId, carryAmount],
+      [userId, subscriptionId, balanceCarry],
     );
 
     return result.rows[0] ?? null;

@@ -1,4 +1,5 @@
 import type { PluginSessionService } from '../../backend/session/plugin-session-service';
+import type { ResetHistoryRepository } from '../repositories/reset-history-repo';
 import type { RolloverHistoryRepository } from '../repositories/rollover-history-repo';
 import type { RolloverSettingsRepository } from '../repositories/rollover-settings-repo';
 import type { DatabaseClient, RouteDefinition } from '../types/subscription-contract';
@@ -12,6 +13,7 @@ export type CreateSubscriptionRoutesDependencies = {
   mergeService: SubscriptionMergeService;
   rolloverSettingsRepository: RolloverSettingsRepository;
   rolloverHistoryRepository: RolloverHistoryRepository;
+  resetHistoryRepository: ResetHistoryRepository;
   resetService: SubscriptionResetService;
 };
 

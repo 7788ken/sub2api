@@ -9,10 +9,11 @@ import {
   type ApiRequestContext,
   type ResetQuotaSummary,
   type ResetSubscriptionResponse,
-  type RolloverHistoryRecord,
+  type SubscriptionHistoryRecord,
   type SubscriptionSummary,
   type ToggleRolloverResponse,
 } from '../types/subscription-contract';
+import type { ResetHistoryRepository } from '../repositories/reset-history-repo';
 import type { RolloverHistoryRepository } from '../repositories/rollover-history-repo';
 import type { RolloverSettingsRepository } from '../repositories/rollover-settings-repo';
 import type { DatabaseClient } from '../types/subscription-contract';
@@ -25,6 +26,7 @@ export type SubscriptionHandlerDependencies = {
   mergeService: SubscriptionMergeService;
   rolloverSettingsRepository: RolloverSettingsRepository;
   rolloverHistoryRepository: RolloverHistoryRepository;
+  resetHistoryRepository: ResetHistoryRepository;
   resetService: SubscriptionResetService;
 };
 
@@ -109,7 +111,7 @@ export class SubscriptionHandler {
 
   async getRolloverHistory(
     context: ApiRequestContext,
-  ): Promise<ApiHandlerResult<RolloverHistoryRecord[] | null>> {
+  ): Promise<ApiHandlerResult<SubscriptionHistoryRecord[] | null>> {
     try {
       const session = await this.dependencies.sessionService.requireSession(context);
       const subscriptionId = requirePositiveInteger(context.params.id, 'subscription id');
@@ -121,12 +123,40 @@ export class SubscriptionHandler {
         subscriptionId,
       );
 
-      const history = await this.dependencies.rolloverHistoryRepository.listRecent(
-        this.dependencies.databaseClient,
-        session.session.userId,
-        subscriptionId,
-        limit,
-      );
+      const [rolloverHistory, resetHistory] = await Promise.all([
+        this.dependencies.rolloverHistoryRepository.listRecent(
+          this.dependencies.databaseClient,
+          session.session.userId,
+          subscriptionId,
+          limit,
+        ),
+        this.dependencies.resetHistoryRepository.listRecent(
+          this.dependencies.databaseClient,
+          session.session.userId,
+          subscriptionId,
+          limit,
+        ),
+      ]);
+
+      const history = [
+        ...rolloverHistory.map<SubscriptionHistoryRecord>((item) => ({
+          event_type: 'rollover',
+          event_at: item.rolled_at,
+          quota_before: item.quota_before,
+          carry_amount: item.carry_amount,
+          quota_after: item.quota_after,
+        })),
+        ...resetHistory.map<SubscriptionHistoryRecord>((item) => ({
+          event_type: 'reset',
+          event_at: item.reset_at,
+          days_deducted: item.days_deducted,
+          expires_before: item.expires_before,
+          expires_after: item.expires_after,
+          reset_count_used: item.reset_count_used,
+        })),
+      ]
+        .sort((a, b) => new Date(b.event_at).getTime() - new Date(a.event_at).getTime())
+        .slice(0, limit);
 
       return buildSuccessResult(history, 200, session.responseHeaders);
     } catch (error) {
