@@ -5,6 +5,7 @@ import {
   calculateResetQuotaWeekly,
   classifyPlanCategory,
   createDefaultExtension,
+  isExpiredSubscription,
   normalizeResetState,
   type OwnedSubscriptionSnapshot,
   type SubscriptionExtensionRecord,
@@ -80,6 +81,8 @@ export function buildSubscriptionSummary(
   extension: SubscriptionExtensionRecord,
   rolloverSetting: RolloverSettingRecord | null,
 ): SubscriptionSummary {
+  const now = new Date();
+  const expired = isExpiredSubscription(subscription.expires_at, now);
   const resetQuota30d = calculateResetQuota30d(extension.reset_count_30d);
   const resetQuotaWeekly = calculateResetQuotaWeekly(extension.reset_count_weekly);
   const quotaBreakdown = calculateCarryFirstQuota(
@@ -99,7 +102,8 @@ export function buildSubscriptionSummary(
     available_quota: quotaBreakdown.available_total,
     expires_at: subscription.expires_at,
     virtual_expires_at: subscription.expires_at,
-    rollover_enabled: rolloverSetting?.enabled ?? false,
+    is_expired: expired,
+    rollover_enabled: !expired && (rolloverSetting?.enabled ?? false),
     reset_quota_weekly: resetQuotaWeekly,
     reset_quota_30d: resetQuota30d,
     extra_days_deducted: extension.extra_days_deducted,

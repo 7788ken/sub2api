@@ -3,6 +3,7 @@ import { useMemo, type PropsWithChildren } from 'react';
 import { Skeleton } from 'antd';
 import { usePlugin } from '../../i18n/context';
 import type { SubscriptionSummary } from '../../types/subscriptions';
+import { formatDisplayQuota } from '../../utils/number-format';
 import { PlanIcon } from '../../utils/plan-icons';
 
 type ShellProps = PropsWithChildren<{
@@ -93,8 +94,8 @@ export function SelfServiceShell({ subscriptions, loading, adminStats, children 
                 <div className="ssc-quota-type-info">
                   <span className="ssc-quota-type-name">{group.category}</span>
                   <span className="ssc-quota-type-value">
-                    {group.totalAvailable}
-                    <span className="ssc-quota-type-total"> / {group.totalQuota}</span>
+                    {formatDisplayQuota(group.totalAvailable)}
+                    <span className="ssc-quota-type-total"> / {formatDisplayQuota(group.totalQuota)}</span>
                   </span>
                 </div>
               </div>

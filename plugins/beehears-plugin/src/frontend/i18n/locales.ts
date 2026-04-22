@@ -29,6 +29,7 @@ const zh = {
   card_label_daily_quota: '日配额',
   card_label_virtual_expires: '到期时间',
   card_label_rollover: '转结',
+  card_label_expired: '已过期',
   card_rollover_on: '已开启',
   card_rollover_off: '已关闭',
   card_btn_detail: '明细',
@@ -37,6 +38,7 @@ const zh = {
   card_badge_30d: '30天',
   msg_rollover_on: '已开启自动余额转结',
   msg_rollover_off: '已关闭自动余额转结',
+  msg_rollover_expired: '过期订阅不可使用转结功能',
   msg_rollover_fail: '更新转结状态失败',
   msg_reset_ok: '额度已重置，到期时间已同步更新',
   msg_reset_fail: '重置额度失败',
@@ -73,6 +75,7 @@ const zh = {
   reset_effect_carry_desc: '转结余额会被清空',
   reset_quota_ready_desc: '本次操作会同时扣减本周与 30 天重置额度。',
   reset_quota_blocked_desc: '当前本周或 30 天重置额度不足，暂时无法执行。',
+  reset_expired_desc: '订阅已过期，不可使用重置额度功能。',
 
   // Beta gate
   beta_title: '内测通道',
@@ -80,6 +83,8 @@ const zh = {
   beta_placeholder: '内测密码',
   beta_submit: '进入',
   beta_wrong_password: '密码错误',
+  beta_auth_required: '登录已失效，请重新从主站进入插件。',
+  beta_rate_limited: '尝试次数过多，请稍后再试。',
 } as const;
 
 export type Messages = { [K in keyof typeof zh]: string };
@@ -114,6 +119,7 @@ const en: Messages = {
   card_label_daily_quota: 'Daily Quota',
   card_label_virtual_expires: 'Expires',
   card_label_rollover: 'Rollover',
+  card_label_expired: 'Expired',
   card_rollover_on: 'On',
   card_rollover_off: 'Off',
   card_btn_detail: 'History',
@@ -122,6 +128,7 @@ const en: Messages = {
   card_badge_30d: '30d',
   msg_rollover_on: 'Auto rollover enabled',
   msg_rollover_off: 'Auto rollover disabled',
+  msg_rollover_expired: 'Expired subscriptions cannot use rollover',
   msg_rollover_fail: 'Failed to update rollover',
   msg_reset_ok: 'Quota reset, expiry updated',
   msg_reset_fail: 'Failed to reset quota',
@@ -159,6 +166,7 @@ const en: Messages = {
   reset_effect_carry_desc: 'Rollover balance will be cleared',
   reset_quota_ready_desc: 'This action will consume both weekly and 30-day reset quota.',
   reset_quota_blocked_desc: 'Weekly or 30-day reset quota is exhausted, so reset is unavailable.',
+  reset_expired_desc: 'Expired subscriptions cannot use quota reset.',
 
   // Beta gate
   beta_title: 'Beta Access',
@@ -166,6 +174,8 @@ const en: Messages = {
   beta_placeholder: 'Access code',
   beta_submit: 'Enter',
   beta_wrong_password: 'Wrong password',
+  beta_auth_required: 'Authentication expired. Reopen the plugin from the main site.',
+  beta_rate_limited: 'Too many attempts. Please try again later.',
 };
 
 export const messages: Record<Locale, Messages> = { zh, en };

@@ -29,6 +29,7 @@ type subscriptionCacheData struct {
 	DailyUsage   float64
 	WeeklyUsage  float64
 	MonthlyUsage float64
+	DailyBonus   float64
 	Version      int64
 }
 
@@ -410,6 +411,7 @@ func (s *BillingCacheService) convertFromPortsData(data *SubscriptionCacheData) 
 		DailyUsage:   data.DailyUsage,
 		WeeklyUsage:  data.WeeklyUsage,
 		MonthlyUsage: data.MonthlyUsage,
+		DailyBonus:   data.DailyBonus,
 		Version:      data.Version,
 	}
 }
@@ -421,6 +423,7 @@ func (s *BillingCacheService) convertToPortsData(data *subscriptionCacheData) *S
 		DailyUsage:   data.DailyUsage,
 		WeeklyUsage:  data.WeeklyUsage,
 		MonthlyUsage: data.MonthlyUsage,
+		DailyBonus:   data.DailyBonus,
 		Version:      data.Version,
 	}
 }
@@ -438,6 +441,7 @@ func (s *BillingCacheService) getSubscriptionFromDB(ctx context.Context, userID,
 		DailyUsage:   sub.DailyUsageUSD,
 		WeeklyUsage:  sub.WeeklyUsageUSD,
 		MonthlyUsage: sub.MonthlyUsageUSD,
+		DailyBonus:   sub.DailyBonusUSD,
 		Version:      sub.UpdatedAt.Unix(),
 	}, nil
 }
@@ -713,8 +717,8 @@ func (s *BillingCacheService) checkSubscriptionEligibility(ctx context.Context, 
 		return ErrSubscriptionInvalid
 	}
 
-	// 检查限额（使用传入的Group限额配置）
-	if group.HasDailyLimit() && subData.DailyUsage >= *group.DailyLimitUSD {
+	// 检查限额（使用传入的Group限额配置，加上 carry bonus）
+	if group.HasDailyLimit() && subData.DailyUsage >= *group.DailyLimitUSD+subData.DailyBonus {
 		return ErrDailyLimitExceeded
 	}
 

@@ -28,9 +28,16 @@ export type EnabledRolloverSubscriptionRow = {
 export type InsertRolloverHistoryParams = {
   userId: number;
   subscriptionId: number;
+  businessDate: string;
   quotaBefore: number;
   carryAmount: number;
   quotaAfter: number;
+  bonusInjected: number;
+};
+
+export type UpdateDailyBonusParams = {
+  subscriptionId: number;
+  bonusUsd: number;
 };
 
 export type JobSummary = {
@@ -53,7 +60,9 @@ export type RolloverJobSummary = JobSummary;
 export type Sub2ApiJobClientOptions = {
   baseUrl: string;
   adminToken?: string;
+  rolloverToken?: string;
   subscriptionsPath?: string;
+  rolloverSnapshotPath?: string;
   fetchImpl?: typeof fetch;
 };
 
@@ -74,7 +83,15 @@ export type RolloverJobServiceDependencies = {
   logger: JobLogger;
   sub2apiJobClient: {
     getServiceToken(): string;
+    getRolloverSnapshotToken(): string;
     listSubscriptionsForJobs(serviceToken: string): Promise<Sub2ApiSubscription[]>;
+    getUsageRolloverSnapshot(
+      serviceToken: string,
+      snapshotToken: string,
+      businessDate: string,
+      timezone: string,
+      subscriptionIds: number[],
+    ): Promise<Map<number, number>>;
   };
   rolloverJobRepo: {
     listEnabledSubscriptions(executor: SqlExecutor): Promise<EnabledRolloverSubscriptionRow[]>;
@@ -94,6 +111,10 @@ export type RolloverJobServiceDependencies = {
       executor: SqlExecutor,
       params: InsertRolloverHistoryParams,
     ): Promise<RolloverHistoryRecord>;
+    updateDailyBonusUsd(
+      executor: SqlExecutor,
+      params: UpdateDailyBonusParams,
+    ): Promise<void>;
   };
   subscriptionExtensionRepo: {
     findOrCreateForUpdate(

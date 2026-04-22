@@ -3,6 +3,7 @@ import {
   calculateResetQuota30d,
   calculateResetQuotaWeekly,
   hasResettableVirtualExpiry,
+  isExpiredSubscription,
   normalizeResetState,
   startOfResetWeek,
   type DatabaseClient,
@@ -33,6 +34,7 @@ export class SubscriptionResetService {
     const normalized = normalizeResetState(snapshot.extension, now);
     const extraDaysDeducted = snapshot.extension.extra_days_deducted;
     const expiresAt = snapshot.base.expires_at;
+    const expired = isExpiredSubscription(expiresAt, now);
     const hasEnoughExpiry = hasResettableVirtualExpiry(expiresAt, now);
 
     return {
@@ -44,6 +46,7 @@ export class SubscriptionResetService {
       extra_days_deducted: extraDaysDeducted,
       virtual_expires_at: expiresAt,
       can_reset:
+        !expired &&
         normalized.reset_count_30d < 3 &&
         normalized.reset_count_weekly < 1 &&
         hasEnoughExpiry,
@@ -69,6 +72,10 @@ export class SubscriptionResetService {
 
       if (normalized.reset_count_30d >= 3 || normalized.reset_count_weekly >= 1) {
         throw new PluginApiError(409, 'RESET_NOT_ALLOWED', 'Reset quota exceeded');
+      }
+
+      if (isExpiredSubscription(snapshot.base.expires_at, now)) {
+        throw new PluginApiError(409, 'RESET_NOT_ALLOWED', 'Expired subscriptions cannot reset quota');
       }
 
       if (!hasResettableVirtualExpiry(snapshot.base.expires_at, now)) {

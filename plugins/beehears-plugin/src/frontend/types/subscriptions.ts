@@ -21,6 +21,7 @@ export type SubscriptionSummary = {
   available_quota: number;
   expires_at: string;
   virtual_expires_at: string;
+  is_expired: boolean;
   rollover_enabled: boolean;
   reset_quota_weekly: number;
   reset_quota_30d: number;

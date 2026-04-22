@@ -11,20 +11,24 @@ export type ResolvedPluginSession = {
 export type PluginSessionServiceOptions = {
   cookieName?: string;
   iframeTokenHeader?: string;
-  sessionHeader?: string;
   iframeTokenQueryKeys?: string[];
+  sessionTtlMs?: number;
+  secureCookie?: boolean;
+  requireBetaAccess?: boolean;
 };
 
 const DEFAULT_COOKIE_NAME = 'beehears_plugin_session';
 const DEFAULT_IFRAME_TOKEN_HEADER = 'x-sub2api-token';
-const DEFAULT_SESSION_HEADER = 'x-plugin-session-id';
 const DEFAULT_IFRAME_TOKEN_QUERY_KEYS = ['token', 'access_token'];
+const DEFAULT_SESSION_TTL_MS = 5 * 60 * 1000;
 
 export class PluginSessionService {
   private readonly cookieName: string;
   private readonly iframeTokenHeader: string;
-  private readonly sessionHeader: string;
   private readonly iframeTokenQueryKeys: string[];
+  private readonly sessionTtlMs: number;
+  private readonly secureCookie: boolean;
+  private readonly requireBetaAccess: boolean;
 
   constructor(
     private readonly authClient: Sub2ApiAuthClient,
@@ -33,47 +37,104 @@ export class PluginSessionService {
   ) {
     this.cookieName = options.cookieName ?? DEFAULT_COOKIE_NAME;
     this.iframeTokenHeader = options.iframeTokenHeader ?? DEFAULT_IFRAME_TOKEN_HEADER;
-    this.sessionHeader = options.sessionHeader ?? DEFAULT_SESSION_HEADER;
     this.iframeTokenQueryKeys = options.iframeTokenQueryKeys ?? DEFAULT_IFRAME_TOKEN_QUERY_KEYS;
+    this.sessionTtlMs = options.sessionTtlMs ?? DEFAULT_SESSION_TTL_MS;
+    this.secureCookie = options.secureCookie ?? false;
+    this.requireBetaAccess = options.requireBetaAccess ?? false;
   }
 
   async requireSession(context: ApiRequestContext): Promise<ResolvedPluginSession> {
     const sessionId = this.readSessionId(context);
-    if (sessionId) {
-      const session = await this.sessionStore.get(sessionId);
-      if (session) {
+    const iframeToken = this.readIframeToken(context);
+    const existingSession = sessionId ? await this.sessionStore.get(sessionId) : null;
+    const tokenSessionMatch = iframeToken
+      ? await this.sessionStore.findBySub2apiToken(iframeToken)
+      : null;
+
+    if (iframeToken) {
+      if (
+        !existingSession
+        && tokenSessionMatch
+        && this.isSessionFresh(tokenSessionMatch.session)
+      ) {
         return {
-          session,
-          sessionId,
+          session: tokenSessionMatch.session,
+          sessionId: tokenSessionMatch.sessionId,
+          responseHeaders: {
+            'Set-Cookie': this.buildSessionCookie(tokenSessionMatch.sessionId),
+          },
         };
       }
+
+      if (
+        existingSession?.sub2apiToken === iframeToken
+        && this.isSessionFresh(existingSession)
+      ) {
+        return {
+          session: existingSession,
+          sessionId: sessionId!,
+        };
+      }
+
+      return await this.bootstrapSessionFromToken(iframeToken, {
+        existingSessionId: sessionId ?? tokenSessionMatch?.sessionId,
+        previousSession: existingSession ?? tokenSessionMatch?.session,
+      });
     }
 
-    const iframeToken = this.readIframeToken(context);
-    if (!iframeToken) {
+    if (existingSession) {
+      if (this.isSessionFresh(existingSession)) {
+        return {
+          session: existingSession,
+          sessionId: sessionId!,
+        };
+      }
+
+      return await this.bootstrapSessionFromToken(existingSession.sub2apiToken, {
+        existingSessionId: sessionId,
+        previousSession: existingSession,
+      });
+    }
+
+    throw new PluginApiError(401, 'UNAUTHORIZED', 'Authentication required');
+  }
+
+  async markBetaUnlocked(sessionId: string): Promise<void> {
+    const session = await this.sessionStore.get(sessionId);
+    if (!session) {
       throw new PluginApiError(401, 'UNAUTHORIZED', 'Authentication required');
     }
 
-    const user = await this.authClient.authenticate(iframeToken);
-    const nextSessionId = crypto.randomUUID();
-    // 首次拿到 iframe token 时立即换成插件 session，后续业务接口统一基于插件 session 鉴权。
-    const session: PluginSession = {
-      userId: user.id,
-      sub2apiToken: iframeToken,
-      email: user.email,
-      displayName: user.nickname ?? user.username ?? user.email,
-      createdAt: new Date().toISOString(),
-    };
+    await this.sessionStore.set(sessionId, {
+      ...session,
+      betaUnlockedAt: new Date().toISOString(),
+    });
+  }
 
-    await this.sessionStore.set(nextSessionId, session);
+  async clearBetaUnlocked(sessionId: string): Promise<void> {
+    const session = await this.sessionStore.get(sessionId);
+    if (!session) {
+      throw new PluginApiError(401, 'UNAUTHORIZED', 'Authentication required');
+    }
 
-    return {
-      session,
-      sessionId: nextSessionId,
-      responseHeaders: {
-        'Set-Cookie': `${this.cookieName}=${nextSessionId}; Path=/; HttpOnly; SameSite=Lax`,
-      },
-    };
+    if (!session.betaUnlockedAt) {
+      return;
+    }
+
+    await this.sessionStore.set(sessionId, {
+      ...session,
+      betaUnlockedAt: undefined,
+    });
+  }
+
+  assertBetaAccess(resolvedSession: ResolvedPluginSession): void {
+    if (!this.requireBetaAccess) {
+      return;
+    }
+
+    if (!resolvedSession.session.betaUnlockedAt) {
+      throw new PluginApiError(403, 'BETA_ACCESS_REQUIRED', 'Beta access required');
+    }
   }
 
   private readSessionId(context: ApiRequestContext) {
@@ -93,8 +154,6 @@ export class PluginSessionService {
         return sessionId;
       }
     }
-
-    return context.headers.get(this.sessionHeader) ?? undefined;
   }
 
   private readIframeToken(context: ApiRequestContext) {
@@ -113,7 +172,7 @@ export class PluginSessionService {
       return queryToken;
     }
 
-    return this.readTokenFromReferer(context.headers);
+    return undefined;
   }
 
   private readTokenFromSearchParams(searchParams: URLSearchParams) {
@@ -127,17 +186,69 @@ export class PluginSessionService {
     return undefined;
   }
 
-  private readTokenFromReferer(headers: Headers) {
-    const referer = headers.get('referer') ?? headers.get('referrer');
-    if (!referer) {
-      return undefined;
+  private async bootstrapSessionFromToken(
+    iframeToken: string,
+    options: {
+      existingSessionId?: string;
+      previousSession?: PluginSession;
+    } = {},
+  ): Promise<ResolvedPluginSession> {
+    try {
+      const user = await this.authClient.authenticate(iframeToken);
+      const nextSessionId = options.existingSessionId ?? crypto.randomUUID();
+      const nowIso = new Date().toISOString();
+      const session: PluginSession = {
+        userId: user.id,
+        sub2apiToken: iframeToken,
+        email: user.email,
+        displayName: user.nickname ?? user.username ?? user.email,
+        createdAt: options.previousSession?.createdAt ?? nowIso,
+        validatedAt: nowIso,
+        betaUnlockedAt: options.previousSession?.betaUnlockedAt,
+      };
+
+      await this.sessionStore.set(nextSessionId, session);
+
+      return {
+        session,
+        sessionId: nextSessionId,
+        responseHeaders: options.existingSessionId
+          ? undefined
+          : {
+              'Set-Cookie': this.buildSessionCookie(nextSessionId),
+            },
+      };
+    } catch (error) {
+      if (options.existingSessionId) {
+        await this.sessionStore.delete(options.existingSessionId);
+      }
+      throw error;
+    }
+  }
+
+  private isSessionFresh(session: PluginSession): boolean {
+    const validatedAt = Date.parse(session.validatedAt || session.createdAt);
+    if (!Number.isFinite(validatedAt)) {
+      return false;
+    }
+    return Date.now() - validatedAt < this.sessionTtlMs;
+  }
+
+  private buildSessionCookie(sessionId: string): string {
+    const cookieParts = [
+      `${this.cookieName}=${sessionId}`,
+      'Path=/',
+      'HttpOnly',
+      `Max-Age=${Math.max(1, Math.floor(this.sessionTtlMs / 1000))}`,
+    ];
+
+    if (this.secureCookie) {
+      cookieParts.push('SameSite=None');
+      cookieParts.push('Secure');
+    } else {
+      cookieParts.push('SameSite=Lax');
     }
 
-    try {
-      const refererUrl = new URL(referer);
-      return this.readTokenFromSearchParams(refererUrl.searchParams);
-    } catch {
-      return undefined;
-    }
+    return cookieParts.join('; ');
   }
 }

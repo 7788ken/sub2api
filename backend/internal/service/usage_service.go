@@ -333,6 +333,15 @@ func (s *UsageService) GetBatchAPIKeyUsageStats(ctx context.Context, apiKeyIDs [
 	return stats, nil
 }
 
+// GetSubscriptionActualCostSnapshot returns settled actual_cost totals for subscriptions in a time range.
+func (s *UsageService) GetSubscriptionActualCostSnapshot(ctx context.Context, subscriptionIDs []int64, startTime, endTime time.Time) (map[int64]float64, error) {
+	stats, err := s.usageRepo.GetSubscriptionActualCostSnapshot(ctx, subscriptionIDs, startTime, endTime)
+	if err != nil {
+		return nil, fmt.Errorf("get subscription actual cost snapshot: %w", err)
+	}
+	return stats, nil
+}
+
 // ListWithFilters lists usage logs with admin filters.
 func (s *UsageService) ListWithFilters(ctx context.Context, params pagination.PaginationParams, filters usagestats.UsageLogFilters) ([]UsageLog, *pagination.PaginationResult, error) {
 	logs, result, err := s.usageRepo.ListWithFilters(ctx, params, filters)

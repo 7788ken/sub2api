@@ -2,6 +2,7 @@ import { Empty, Modal, Skeleton } from 'antd';
 import { usePlugin } from '../../i18n/context';
 import { useRolloverHistory } from '../../hooks/useSubscriptions';
 import type { SubscriptionHistoryRecord } from '../../types/subscriptions';
+import { formatDisplayQuota } from '../../utils/number-format';
 
 type RolloverHistoryModalProps = {
   open: boolean;
@@ -42,9 +43,9 @@ export function RolloverHistoryModal({
                   {item.event_type === 'rollover' ? (
                     <div className="ssc-history-values">
                       <span><strong>{t.history_rollover_tag}</strong></span>
-                      <span>{t.history_before} <strong>{item.quota_before}</strong></span>
-                      <span>{t.history_carry} <strong>{item.carry_amount}</strong></span>
-                      <span>{t.history_after} <strong>{item.quota_after}</strong></span>
+                      <span>{t.history_before} <strong>{formatDisplayQuota(item.quota_before)}</strong></span>
+                      <span>{t.history_carry} <strong>{formatDisplayQuota(item.carry_amount)}</strong></span>
+                      <span>{t.history_after} <strong>{formatDisplayQuota(item.quota_after)}</strong></span>
                     </div>
                   ) : (
                     <div className="ssc-history-values">

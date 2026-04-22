@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { usePlugin } from '../../i18n/context';
 import { useResetQuota } from '../../hooks/useSubscriptions';
 import type { SubscriptionSummary } from '../../types/subscriptions';
+import { formatDisplayQuota } from '../../utils/number-format';
 
 type ResetConfirmModalProps = {
   open: boolean;
@@ -40,7 +41,8 @@ export function ResetConfirmModal({
 }: ResetConfirmModalProps) {
   const { t } = usePlugin();
   const quotaQuery = useResetQuota(subscription?.id, open);
-  const canReset = Boolean(quotaQuery.data?.can_reset) && !quotaQuery.isLoading;
+  const isExpired = Boolean(subscription?.is_expired);
+  const canReset = Boolean(quotaQuery.data?.can_reset) && !quotaQuery.isLoading && !isExpired;
 
   const projectedExpiry = useMemo(
     () => shiftVirtualExpiry(subscription?.virtual_expires_at),
@@ -82,12 +84,12 @@ export function ResetConfirmModal({
           <section className="ssc-reset-impact-grid">
             <article className="ssc-reset-impact-card is-danger">
               <span className="ssc-label">{t.usage_label}</span>
-              <strong>{subscription?.current_used ?? 0}</strong>
+              <strong>{formatDisplayQuota(subscription?.current_used ?? 0)}</strong>
               <p>{t.reset_effect_usage_desc}</p>
             </article>
             <article className="ssc-reset-impact-card is-danger">
               <span className="ssc-label">{t.card_label_carry}</span>
-              <strong>{subscription?.balance_carry ?? 0}</strong>
+              <strong>{formatDisplayQuota(subscription?.balance_carry ?? 0)}</strong>
               <p>{t.reset_effect_carry_desc}</p>
             </article>
           </section>
@@ -107,7 +109,13 @@ export function ResetConfirmModal({
           <section className="ssc-reset-quota-panel">
             <div className="ssc-reset-quota-copy">
               <span className="ssc-label">{t.reset_confirm}</span>
-              <p>{canReset ? t.reset_quota_ready_desc : t.reset_quota_blocked_desc}</p>
+              <p>
+                {canReset
+                  ? t.reset_quota_ready_desc
+                  : isExpired
+                    ? t.reset_expired_desc
+                    : t.reset_quota_blocked_desc}
+              </p>
             </div>
             <div className="ssc-reset-quota-chips">
               <div className="ssc-reset-quota-chip">

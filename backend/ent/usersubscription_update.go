@@ -250,6 +250,27 @@ func (_u *UserSubscriptionUpdate) AddMonthlyUsageUsd(v float64) *UserSubscriptio
 	return _u
 }
 
+// SetDailyBonusUsd sets the "daily_bonus_usd" field.
+func (_u *UserSubscriptionUpdate) SetDailyBonusUsd(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetDailyBonusUsd()
+	_u.mutation.SetDailyBonusUsd(v)
+	return _u
+}
+
+// SetNillableDailyBonusUsd sets the "daily_bonus_usd" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableDailyBonusUsd(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetDailyBonusUsd(*v)
+	}
+	return _u
+}
+
+// AddDailyBonusUsd adds value to the "daily_bonus_usd" field.
+func (_u *UserSubscriptionUpdate) AddDailyBonusUsd(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddDailyBonusUsd(v)
+	return _u
+}
+
 // SetAssignedBy sets the "assigned_by" field.
 func (_u *UserSubscriptionUpdate) SetAssignedBy(v int64) *UserSubscriptionUpdate {
 	_u.mutation.SetAssignedBy(v)
@@ -515,6 +536,12 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.AddedMonthlyUsageUsd(); ok {
 		_spec.AddField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DailyBonusUsd(); ok {
+		_spec.SetField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyBonusUsd(); ok {
+		_spec.AddField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)
@@ -896,6 +923,27 @@ func (_u *UserSubscriptionUpdateOne) AddMonthlyUsageUsd(v float64) *UserSubscrip
 	return _u
 }
 
+// SetDailyBonusUsd sets the "daily_bonus_usd" field.
+func (_u *UserSubscriptionUpdateOne) SetDailyBonusUsd(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetDailyBonusUsd()
+	_u.mutation.SetDailyBonusUsd(v)
+	return _u
+}
+
+// SetNillableDailyBonusUsd sets the "daily_bonus_usd" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableDailyBonusUsd(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetDailyBonusUsd(*v)
+	}
+	return _u
+}
+
+// AddDailyBonusUsd adds value to the "daily_bonus_usd" field.
+func (_u *UserSubscriptionUpdateOne) AddDailyBonusUsd(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddDailyBonusUsd(v)
+	return _u
+}
+
 // SetAssignedBy sets the "assigned_by" field.
 func (_u *UserSubscriptionUpdateOne) SetAssignedBy(v int64) *UserSubscriptionUpdateOne {
 	_u.mutation.SetAssignedBy(v)
@@ -1191,6 +1239,12 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 	}
 	if value, ok := _u.mutation.AddedMonthlyUsageUsd(); ok {
 		_spec.AddField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DailyBonusUsd(); ok {
+		_spec.SetField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyBonusUsd(); ok {
+		_spec.AddField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)

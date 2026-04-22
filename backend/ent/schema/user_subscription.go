@@ -69,6 +69,11 @@ func (UserSubscription) Fields() []ent.Field {
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}).
 			Default(0),
 
+		field.Float("daily_bonus_usd").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}).
+			Default(0).
+			Comment("Rollover carry bonus added to daily limit"),
+
 		field.Int64("assigned_by").
 			Optional().
 			Nillable(),

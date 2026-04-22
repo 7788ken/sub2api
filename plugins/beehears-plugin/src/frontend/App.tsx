@@ -5,34 +5,40 @@ import { SubscriptionGrid } from './components/subscriptions/SubscriptionGrid';
 import { BetaGate } from './components/BetaGate';
 import { useSubscriptions, useAdminStats } from './hooks/useSubscriptions';
 
-export default function App() {
+function ProtectedApp() {
   const { t } = usePlugin();
   const subscriptionsQuery = useSubscriptions();
   const adminStatsQuery = useAdminStats();
 
   return (
+    <SelfServiceShell
+      subscriptions={subscriptionsQuery.data}
+      loading={subscriptionsQuery.isLoading}
+      adminStats={adminStatsQuery.data ?? null}
+    >
+      {subscriptionsQuery.isLoading ? (
+        <div className="ssc-state">
+          <Spin size="large" />
+        </div>
+      ) : subscriptionsQuery.isError ? (
+        <Alert
+          type="error"
+          showIcon
+          message={t.error_title}
+          description={t.error_desc}
+        />
+      ) : (
+        <SubscriptionGrid subscriptions={subscriptionsQuery.data ?? []} />
+      )}
+    </SelfServiceShell>
+  );
+}
+
+export default function App() {
+  return (
     <AntdApp>
       <BetaGate>
-        <SelfServiceShell
-          subscriptions={subscriptionsQuery.data}
-          loading={subscriptionsQuery.isLoading}
-          adminStats={adminStatsQuery.data ?? null}
-        >
-          {subscriptionsQuery.isLoading ? (
-            <div className="ssc-state">
-              <Spin size="large" />
-            </div>
-          ) : subscriptionsQuery.isError ? (
-            <Alert
-              type="error"
-              showIcon
-              message={t.error_title}
-              description={t.error_desc}
-            />
-          ) : (
-            <SubscriptionGrid subscriptions={subscriptionsQuery.data ?? []} />
-          )}
-        </SelfServiceShell>
+        <ProtectedApp />
       </BetaGate>
     </AntdApp>
   );

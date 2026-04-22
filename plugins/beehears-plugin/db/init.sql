@@ -36,14 +36,31 @@ CREATE TABLE IF NOT EXISTS plugin_beehears.rollover_history (
   user_id         INTEGER NOT NULL,
   sub2api_subscription_id INTEGER NOT NULL,
   rolled_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  business_date   DATE,
   quota_before    NUMERIC(12, 4) NOT NULL DEFAULT 0,
   carry_amount    NUMERIC(12, 4) NOT NULL DEFAULT 0,
   quota_after     NUMERIC(12, 4) NOT NULL DEFAULT 0,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE plugin_beehears.rollover_history
+  ADD COLUMN IF NOT EXISTS business_date DATE;
+
+UPDATE plugin_beehears.rollover_history
+SET business_date = (rolled_at AT TIME ZONE 'Asia/Shanghai')::date
+WHERE business_date IS NULL;
+
+ALTER TABLE plugin_beehears.rollover_history
+  ALTER COLUMN business_date SET NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_rollover_history_sub_id ON plugin_beehears.rollover_history (sub2api_subscription_id);
 CREATE INDEX IF NOT EXISTS idx_rollover_history_rolled_at ON plugin_beehears.rollover_history (rolled_at);
+CREATE INDEX IF NOT EXISTS idx_rollover_history_business_date
+  ON plugin_beehears.rollover_history (user_id, sub2api_subscription_id, business_date);
+
+-- 审计列：记录每次转结实际注入到 user_subscriptions.daily_bonus_usd 的值
+ALTER TABLE plugin_beehears.rollover_history
+  ADD COLUMN IF NOT EXISTS bonus_injected NUMERIC(12, 4) NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS plugin_beehears.reset_history (
   id              SERIAL PRIMARY KEY,

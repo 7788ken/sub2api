@@ -15,6 +15,17 @@ type PaginatedSubscriptionsData = {
   pages?: number;
 };
 
+type RolloverSnapshotItem = {
+  subscription_id: number;
+  actual_cost: number;
+};
+
+type RolloverSnapshotData = {
+  business_date?: string;
+  timezone?: string;
+  items?: RolloverSnapshotItem[];
+};
+
 export class Sub2ApiJobClient {
   private readonly fetchImpl: typeof fetch;
 
@@ -31,6 +42,17 @@ export class Sub2ApiJobClient {
     }
 
     return this.options.adminToken;
+  }
+
+  getRolloverSnapshotToken(): string {
+    if (!this.options.rolloverToken) {
+      throw new JobBlockedError(
+        'sub2api-job-rollover-token',
+        'SUB2API_JOB_ROLLOVER_TOKEN is not configured',
+      );
+    }
+
+    return this.options.rolloverToken;
   }
 
   async listSubscriptionsForJobs(serviceToken: string): Promise<Sub2ApiSubscription[]> {
@@ -85,6 +107,73 @@ export class Sub2ApiJobClient {
     }
 
     return subscriptions.map(mapSub2ApiSubscription);
+  }
+
+  async getUsageRolloverSnapshot(
+    serviceToken: string,
+    snapshotToken: string,
+    businessDate: string,
+    timezone: string,
+    subscriptionIds: number[],
+  ): Promise<Map<number, number>> {
+    if (!this.options.rolloverSnapshotPath) {
+      throw new JobBlockedError(
+        'sub2api-job-rollover-read-capability',
+        'Sub2API rollover snapshot path is not configured',
+      );
+    }
+
+    const normalizedIds = Array.from(
+      new Set(subscriptionIds.filter((id) => Number.isInteger(id) && id > 0)),
+    );
+    const snapshot = new Map<number, number>();
+    for (const subscriptionId of normalizedIds) {
+      snapshot.set(subscriptionId, 0);
+    }
+    if (normalizedIds.length === 0) {
+      return snapshot;
+    }
+
+    const response = await this.fetchImpl(this.buildUrl(this.options.rolloverSnapshotPath), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': serviceToken,
+        'x-sub2api-job-token': snapshotToken,
+      },
+      body: JSON.stringify({
+        business_date: businessDate,
+        timezone,
+        subscription_ids: normalizedIds,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new PluginApiError(
+        502,
+        'ROLLOVER_SNAPSHOT_FAILED',
+        'Failed to load settled usage snapshot for rollover',
+      );
+    }
+
+    const payload = (await response.json()) as Sub2ApiEnvelope<RolloverSnapshotData>;
+    const items = payload.data?.items;
+    if (!Array.isArray(items)) {
+      throw new PluginApiError(
+        502,
+        'UPSTREAM_ERROR',
+        'Sub2API rollover snapshot payload is invalid',
+      );
+    }
+
+    for (const item of items) {
+      if (!Number.isInteger(item.subscription_id) || item.subscription_id <= 0) {
+        continue;
+      }
+      snapshot.set(item.subscription_id, Number(item.actual_cost ?? 0));
+    }
+
+    return snapshot;
   }
 
   private buildUrl(path: string, query?: Record<string, string | number>) {

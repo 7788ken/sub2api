@@ -10,7 +10,7 @@ import type {
 import { MOCK_SUBSCRIPTIONS, MOCK_SUBSCRIPTION_HISTORY, mockResetQuota } from './mock-data';
 
 /** When true, all API calls return mock data instead of hitting the real backend. */
-const USE_MOCK = new URLSearchParams(window.location.search).has('mock');
+const USE_MOCK = import.meta.env.DEV && new URLSearchParams(window.location.search).has('mock');
 
 /** Extract the iframe token from the page URL so every API request carries it. */
 const IFRAME_TOKEN = new URLSearchParams(window.location.search).get('token') ?? '';

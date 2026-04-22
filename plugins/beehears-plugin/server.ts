@@ -27,7 +27,7 @@ import { ResetHistoryRepository } from './src/api/repositories/reset-history-rep
 import { PluginSessionService } from './src/backend/session/plugin-session-service.js';
 import { InMemoryPluginSessionStore } from './src/backend/session/plugin-session.js';
 import { registerBeehearsJobs } from './src/jobs/scheduler.js';
-import type { DatabaseClient, SqlExecutor, QueryResult, ApiRequestContext } from './src/api/types/subscription-contract.js';
+import { PluginApiError, type DatabaseClient, type SqlExecutor, type QueryResult, type ApiRequestContext } from './src/api/types/subscription-contract.js';
 
 // --- 配置 ---
 const __filename = fileURLToPath(import.meta.url);
@@ -36,8 +36,29 @@ const __dirname = dirname(__filename);
 const PORT = Number(process.env.PLUGIN_PORT || 3001);
 const SUB2API_BASE_URL = process.env.SUB2API_BASE_URL || 'http://localhost:8080';
 const SUB2API_ADMIN_TOKEN = process.env.SUB2API_ADMIN_TOKEN || '';
+const SUB2API_JOB_ROLLOVER_TOKEN = process.env.SUB2API_JOB_ROLLOVER_TOKEN || '';
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const BETA_PASSWORD = process.env.BETA_PASSWORD || '';
+const SESSION_TTL_MS = parsePositiveInt(process.env.PLUGIN_SESSION_TTL_MS, 5 * 60 * 1000);
+const BETA_RATE_LIMIT_WINDOW_MS = parsePositiveInt(
+  process.env.BETA_RATE_LIMIT_WINDOW_MS,
+  5 * 60 * 1000,
+);
+const BETA_RATE_LIMIT_MAX_ATTEMPTS = parsePositiveInt(
+  process.env.BETA_RATE_LIMIT_MAX_ATTEMPTS,
+  8,
+);
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://plugin1.beehears.com',
+  'https://coding.beehears.com',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001',
+];
+const ALLOWED_ORIGINS = new Set(
+  parseCsv(process.env.PLUGIN_ALLOWED_ORIGINS).length > 0
+    ? parseCsv(process.env.PLUGIN_ALLOWED_ORIGINS)
+    : DEFAULT_ALLOWED_ORIGINS,
+);
 const ADMIN_USER_IDS = new Set(
   (process.env.ADMIN_USER_IDS || '').split(',').map((s) => s.trim()).filter(Boolean).map(Number),
 );
@@ -113,6 +134,76 @@ type AdminStatsPayload = {
   validSubscriptions: number;
 };
 
+type RateLimitBucket = {
+  count: number;
+  resetAt: number;
+};
+
+const betaAttemptBuckets = new Map<string, RateLimitBucket>();
+
+function parseCsv(value?: string): string[] {
+  return (value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parsePositiveInt(rawValue: string | undefined, fallback: number): number {
+  const value = Number(rawValue);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : fallback;
+}
+
+function isAllowedOrigin(origin?: string): boolean {
+  if (!origin) {
+    return true;
+  }
+  return ALLOWED_ORIGINS.has(origin);
+}
+
+function getClientIp(req: express.Request): string {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  if (typeof forwardedFor === 'string' && forwardedFor.trim()) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  if (Array.isArray(forwardedFor) && forwardedFor.length > 0) {
+    return forwardedFor[0];
+  }
+  return req.ip || req.socket.remoteAddress || 'unknown';
+}
+
+function consumeBetaAttempt(key: string) {
+  const now = Date.now();
+  const existing = betaAttemptBuckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    betaAttemptBuckets.set(key, {
+      count: 1,
+      resetAt: now + BETA_RATE_LIMIT_WINDOW_MS,
+    });
+    return {
+      limited: false,
+      retryAfterSeconds: Math.ceil(BETA_RATE_LIMIT_WINDOW_MS / 1000),
+    };
+  }
+
+  if (existing.count >= BETA_RATE_LIMIT_MAX_ATTEMPTS) {
+    return {
+      limited: true,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    };
+  }
+
+  existing.count += 1;
+  betaAttemptBuckets.set(key, existing);
+  return {
+    limited: false,
+    retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+  };
+}
+
+function resetBetaAttempts(key: string) {
+  betaAttemptBuckets.delete(key);
+}
+
 function getAdminSubscriptionTotal(payload: AdminSubscriptionsResponse): number {
   if (Array.isArray(payload.data)) {
     return payload.data.length;
@@ -175,7 +266,11 @@ async function main() {
     adminToken: SUB2API_ADMIN_TOKEN || undefined,
   });
   const sessionStore = new InMemoryPluginSessionStore();
-  const sessionService = new PluginSessionService(authClient, sessionStore);
+  const sessionService = new PluginSessionService(authClient, sessionStore, {
+    sessionTtlMs: SESSION_TTL_MS,
+    secureCookie: IS_PRODUCTION,
+    requireBetaAccess: Boolean(BETA_PASSWORD),
+  });
 
   const extensionRepo = new SubscriptionExtensionRepository();
   const rolloverSettingsRepo = new RolloverSettingsRepository();
@@ -210,7 +305,17 @@ async function main() {
 
   // 5. 初始化 Express
   const app = express();
-  app.use(cors({ origin: true, credentials: true }));
+  app.set('trust proxy', 1);
+  app.use(cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+    credentials: true,
+  }));
   app.use(cookieParser());
   app.use(express.json());
 
@@ -249,25 +354,103 @@ async function main() {
     res.json({ status: 'ok', service: 'beehears-plugin' });
   });
 
-  // 7.1 内测密码验证
-  app.post('/api/beta/verify', (req: express.Request, res: express.Response) => {
-    const { password } = req.body as { password?: string };
-    if (!BETA_PASSWORD) {
-      res.json({ success: true, data: null, error: null });
-      return;
-    }
-    if (password === BETA_PASSWORD) {
-      res.json({ success: true, data: null, error: null });
-    } else {
-      res.status(403).json({ success: false, data: null, error: { code: 'WRONG_PASSWORD', message: 'Wrong password' } });
+  // 7.1 查询内测门禁状态
+  app.get('/api/beta/status', async (req: express.Request, res: express.Response) => {
+    try {
+      const context = toApiContext(req);
+      const session = await sessionService.requireSession(context);
+
+      if (session.responseHeaders) {
+        for (const [key, value] of Object.entries(session.responseHeaders)) {
+          res.setHeader(key, value);
+        }
+      }
+
+      const required = Boolean(BETA_PASSWORD);
+      if (required && session.session.betaUnlockedAt) {
+        await sessionService.clearBetaUnlocked(session.sessionId);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          required,
+          unlocked: !required,
+        },
+        error: null,
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error('[plugin] beta status error:', err);
+      }
+      res.status(401).json({
+        success: false,
+        data: null,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+      });
     }
   });
 
-  // 7.2 管理员统计（有效订阅 / 全站订阅）
+  // 7.2 内测密码验证
+  app.post('/api/beta/verify', async (req: express.Request, res: express.Response) => {
+    try {
+      const context = toApiContext(req);
+      const session = await sessionService.requireSession(context);
+      const limitKey = `${session.session.userId}:${getClientIp(req)}`;
+      const { password } = req.body as { password?: string };
+
+      if (session.responseHeaders) {
+        for (const [key, value] of Object.entries(session.responseHeaders)) {
+          res.setHeader(key, value);
+        }
+      }
+
+      if (!BETA_PASSWORD) {
+        res.json({ success: true, data: null, error: null });
+        return;
+      }
+
+      const rateLimit = consumeBetaAttempt(limitKey);
+      if (rateLimit.limited) {
+        res.setHeader('Retry-After', String(rateLimit.retryAfterSeconds));
+        res.status(429).json({
+          success: false,
+          data: null,
+          error: { code: 'RATE_LIMITED', message: 'Too many attempts' },
+        });
+        return;
+      }
+
+      if (password !== BETA_PASSWORD) {
+        res.status(403).json({
+          success: false,
+          data: null,
+          error: { code: 'WRONG_PASSWORD', message: 'Wrong password' },
+        });
+        return;
+      }
+
+      await sessionService.markBetaUnlocked(session.sessionId);
+      resetBetaAttempts(limitKey);
+      res.json({ success: true, data: null, error: null });
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error('[plugin] beta verify error:', err);
+      }
+      res.status(401).json({
+        success: false,
+        data: null,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+      });
+    }
+  });
+
+  // 7.3 管理员统计（有效订阅 / 全站订阅）
   app.get('/api/admin/stats', async (req: express.Request, res: express.Response) => {
     try {
       const context = toApiContext(req);
       const session = await sessionService.requireSession(context);
+      sessionService.assertBetaAccess(session);
       if (!ADMIN_USER_IDS.has(session.session.userId)) {
         res.status(403).json({ success: false, data: null, error: { code: 'FORBIDDEN', message: 'Admin only' } });
         return;
@@ -292,6 +475,18 @@ async function main() {
       res.json({ success: true, data: stats, error: null });
     } catch (err) {
       console.error('[plugin] admin stats error:', err);
+      if (err instanceof PluginApiError) {
+        res.status(err.status).json({
+          success: false,
+          data: null,
+          error: {
+            code: err.code,
+            message: err.message,
+            details: err.details,
+          },
+        });
+        return;
+      }
       res.status(500).json({ success: false, data: null, error: { code: 'INTERNAL_ERROR', message: 'Failed to load admin stats' } });
     }
   });
@@ -327,7 +522,9 @@ async function main() {
       databaseClient,
       sub2ApiBaseUrl: SUB2API_BASE_URL,
       sub2ApiAdminToken: SUB2API_ADMIN_TOKEN,
+      sub2ApiJobRolloverToken: SUB2API_JOB_ROLLOVER_TOKEN || undefined,
       sub2ApiJobSubscriptionsPath: '/api/v1/admin/subscriptions',
+      sub2ApiJobRolloverSnapshotPath: '/api/v1/admin/subscriptions/usage-rollover-snapshot',
     });
     console.log('[plugin] ✓ Cron jobs registered');
   } else {

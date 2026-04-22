@@ -12,7 +12,9 @@ type SchedulerOptions = {
   databaseClient: DatabaseClient;
   sub2ApiBaseUrl: string;
   sub2ApiAdminToken?: string;
+  sub2ApiJobRolloverToken?: string;
   sub2ApiJobSubscriptionsPath?: string;
+  sub2ApiJobRolloverSnapshotPath?: string;
   logger?: JobLogger;
 };
 
@@ -29,7 +31,9 @@ export async function registerBeehearsJobs(options: SchedulerOptions) {
   const sub2apiJobClient = new Sub2ApiJobClient({
     baseUrl: options.sub2ApiBaseUrl,
     adminToken: options.sub2ApiAdminToken,
+    rolloverToken: options.sub2ApiJobRolloverToken,
     subscriptionsPath: options.sub2ApiJobSubscriptionsPath,
+    rolloverSnapshotPath: options.sub2ApiJobRolloverSnapshotPath,
   });
 
   const rolloverJobService = new RolloverJobService({
@@ -46,7 +50,7 @@ export async function registerBeehearsJobs(options: SchedulerOptions) {
     resetCounterJobRepo: new ResetCounterJobRepository(),
   });
 
-  cronModule.schedule('0 0 0 * * *', async () => {
+  cronModule.schedule('0 5 0 * * *', async () => {
     try {
       await rolloverJobService.run(new Date());
     } catch (error) {

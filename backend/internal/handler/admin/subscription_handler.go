@@ -2,15 +2,27 @@ package admin
 
 import (
 	"context"
+	"crypto/subtle"
+	"log"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	rolloverSnapshotJobTokenHeader = "x-sub2api-job-token"
+	rolloverSnapshotJobTokenEnv    = "SUB2API_JOB_ROLLOVER_TOKEN"
+	maxRolloverSnapshotIDs         = 500
 )
 
 // toResponsePagination converts pagination.PaginationResult to response.PaginationResult
@@ -29,12 +41,14 @@ func toResponsePagination(p *pagination.PaginationResult) *response.PaginationRe
 // SubscriptionHandler handles admin subscription management
 type SubscriptionHandler struct {
 	subscriptionService *service.SubscriptionService
+	usageService        *service.UsageService
 }
 
 // NewSubscriptionHandler creates a new admin subscription handler
-func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *SubscriptionHandler {
+func NewSubscriptionHandler(subscriptionService *service.SubscriptionService, usageService *service.UsageService) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		subscriptionService: subscriptionService,
+		usageService:        usageService,
 	}
 }
 
@@ -224,6 +238,23 @@ type ResetSubscriptionQuotaRequest struct {
 	Monthly bool `json:"monthly"`
 }
 
+type UsageRolloverSnapshotRequest struct {
+	BusinessDate    string  `json:"business_date" binding:"required"`
+	Timezone        string  `json:"timezone" binding:"required"`
+	SubscriptionIDs []int64 `json:"subscription_ids" binding:"required"`
+}
+
+type UsageRolloverSnapshotItem struct {
+	SubscriptionID int64   `json:"subscription_id"`
+	ActualCost     float64 `json:"actual_cost"`
+}
+
+type UsageRolloverSnapshotResponse struct {
+	BusinessDate string                      `json:"business_date"`
+	Timezone     string                      `json:"timezone"`
+	Items        []UsageRolloverSnapshotItem `json:"items"`
+}
+
 // ResetQuota resets daily, weekly, and/or monthly usage for a subscription.
 // POST /api/v1/admin/subscriptions/:id/reset-quota
 func (h *SubscriptionHandler) ResetQuota(c *gin.Context) {
@@ -247,6 +278,83 @@ func (h *SubscriptionHandler) ResetQuota(c *gin.Context) {
 		return
 	}
 	response.Success(c, dto.UserSubscriptionFromServiceAdmin(sub))
+}
+
+// UsageRolloverSnapshot returns yesterday's settled actual_cost totals by subscription.
+// POST /api/v1/admin/subscriptions/usage-rollover-snapshot
+func (h *SubscriptionHandler) UsageRolloverSnapshot(c *gin.Context) {
+	if !authorizeRolloverSnapshotRequest(c) {
+		return
+	}
+
+	var req UsageRolloverSnapshotRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	normalizedTimezone := strings.TrimSpace(req.Timezone)
+	if normalizedTimezone == "" {
+		response.BadRequest(c, "timezone is required")
+		return
+	}
+	if _, err := time.LoadLocation(normalizedTimezone); err != nil {
+		response.BadRequest(c, "timezone is invalid")
+		return
+	}
+
+	normalizedIDs := normalizePositiveIDs(req.SubscriptionIDs)
+	if len(normalizedIDs) == 0 {
+		response.BadRequest(c, "subscription_ids must contain at least one positive integer")
+		return
+	}
+	if len(normalizedIDs) > maxRolloverSnapshotIDs {
+		response.BadRequest(c, "subscription_ids exceeds maximum batch size")
+		return
+	}
+
+	startTime, err := timezone.ParseInUserLocation("2006-01-02", strings.TrimSpace(req.BusinessDate), normalizedTimezone)
+	if err != nil {
+		response.BadRequest(c, "business_date must use YYYY-MM-DD format")
+		return
+	}
+	endTime := startTime.AddDate(0, 0, 1)
+
+	now := timezone.NowInUserLocation(normalizedTimezone)
+	yesterday := timezone.StartOfDayInUserLocation(now.AddDate(0, 0, -1), normalizedTimezone)
+	if startTime.Format("2006-01-02") != yesterday.Format("2006-01-02") {
+		response.BadRequest(c, "business_date must be yesterday in the requested timezone")
+		return
+	}
+
+	snapshot, err := h.usageService.GetSubscriptionActualCostSnapshot(c.Request.Context(), normalizedIDs, startTime, endTime)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	items := make([]UsageRolloverSnapshotItem, 0, len(normalizedIDs))
+	for _, subscriptionID := range normalizedIDs {
+		items = append(items, UsageRolloverSnapshotItem{
+			SubscriptionID: subscriptionID,
+			ActualCost:     snapshot[subscriptionID],
+		})
+	}
+
+	log.Printf(
+		"[AUDIT] admin usage rollover snapshot admin_id=%d business_date=%s timezone=%s subscription_count=%d result_count=%d",
+		getAdminIDFromContext(c),
+		startTime.Format("2006-01-02"),
+		normalizedTimezone,
+		len(normalizedIDs),
+		len(items),
+	)
+
+	response.Success(c, UsageRolloverSnapshotResponse{
+		BusinessDate: startTime.Format("2006-01-02"),
+		Timezone:     normalizedTimezone,
+		Items:        items,
+	})
 }
 
 // Revoke handles revoking a subscription
@@ -320,4 +428,40 @@ func getAdminIDFromContext(c *gin.Context) int64 {
 		return 0
 	}
 	return subject.UserID
+}
+
+func authorizeRolloverSnapshotRequest(c *gin.Context) bool {
+	expectedToken := strings.TrimSpace(os.Getenv(rolloverSnapshotJobTokenEnv))
+	if expectedToken == "" {
+		response.Forbidden(c, "Rollover snapshot capability is not configured")
+		return false
+	}
+
+	providedToken := strings.TrimSpace(c.GetHeader(rolloverSnapshotJobTokenHeader))
+	if providedToken == "" || subtle.ConstantTimeCompare([]byte(providedToken), []byte(expectedToken)) != 1 {
+		response.Forbidden(c, "Rollover snapshot capability required")
+		return false
+	}
+
+	return true
+}
+
+func normalizePositiveIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	result := make([]int64, 0, len(ids))
+	seen := make(map[int64]struct{}, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result
 }

@@ -146,6 +146,7 @@ export type SubscriptionSummary = {
   available_quota: number;
   expires_at: string;
   virtual_expires_at: string;
+  is_expired: boolean;
   rollover_enabled: boolean;
   reset_quota_weekly: number;
   reset_quota_30d: number;
@@ -420,6 +421,10 @@ export function calculateResetQuotaWeekly(resetCountWeekly: number) {
 
 export function calculateVirtualExpiresAt(expiresAt: string, _extraDaysDeducted: number) {
   return expiresAt;
+}
+
+export function isExpiredSubscription(expiresAt: string, now: Date) {
+  return parseDate(expiresAt).getTime() <= now.getTime();
 }
 
 export function hasResettableVirtualExpiry(virtualExpiresAt: string, now: Date) {

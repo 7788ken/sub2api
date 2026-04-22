@@ -1,5 +1,6 @@
 import { PluginSessionService } from '../../backend/session/plugin-session-service';
 import {
+  PluginApiError,
   buildErrorResult,
   buildSuccessResult,
   parseHistoryLimit,
@@ -33,9 +34,15 @@ export type SubscriptionHandlerDependencies = {
 export class SubscriptionHandler {
   constructor(private readonly dependencies: SubscriptionHandlerDependencies) {}
 
+  private async requireAuthorizedSession(context: ApiRequestContext) {
+    const session = await this.dependencies.sessionService.requireSession(context);
+    this.dependencies.sessionService.assertBetaAccess(session);
+    return session;
+  }
+
   async list(context: ApiRequestContext): Promise<ApiHandlerResult<SubscriptionSummary[] | null>> {
     try {
-      const session = await this.dependencies.sessionService.requireSession(context);
+      const session = await this.requireAuthorizedSession(context);
       const subscriptions = await this.dependencies.mergeService.listOwnedSubscriptions(
         session.session.userId,
         session.session.sub2apiToken,
@@ -54,7 +61,7 @@ export class SubscriptionHandler {
 
   async getById(context: ApiRequestContext): Promise<ApiHandlerResult<SubscriptionSummary | null>> {
     try {
-      const session = await this.dependencies.sessionService.requireSession(context);
+      const session = await this.requireAuthorizedSession(context);
       const subscriptionId = requirePositiveInteger(context.params.id, 'subscription id');
       const subscription = await this.dependencies.mergeService.getOwnedSubscription(
         session.session.userId,
@@ -72,15 +79,23 @@ export class SubscriptionHandler {
     context: ApiRequestContext,
   ): Promise<ApiHandlerResult<ToggleRolloverResponse | null>> {
     try {
-      const session = await this.dependencies.sessionService.requireSession(context);
+      const session = await this.requireAuthorizedSession(context);
       const subscriptionId = requirePositiveInteger(context.params.id, 'subscription id');
       const request = parseToggleRequest(context.body);
 
-      await this.dependencies.mergeService.getOwnedSubscription(
+      const subscription = await this.dependencies.mergeService.getOwnedSubscription(
         session.session.userId,
         session.session.sub2apiToken,
         subscriptionId,
       );
+
+      if (subscription.summary.is_expired) {
+        throw new PluginApiError(
+          409,
+          'ROLLOVER_NOT_ALLOWED',
+          'Expired subscriptions cannot use rollover',
+        );
+      }
 
       const updated = await this.dependencies.rolloverSettingsRepository.upsert(
         this.dependencies.databaseClient,
@@ -113,7 +128,7 @@ export class SubscriptionHandler {
     context: ApiRequestContext,
   ): Promise<ApiHandlerResult<SubscriptionHistoryRecord[] | null>> {
     try {
-      const session = await this.dependencies.sessionService.requireSession(context);
+      const session = await this.requireAuthorizedSession(context);
       const subscriptionId = requirePositiveInteger(context.params.id, 'subscription id');
       const limit = parseHistoryLimit(context.query.get('limit'));
 
@@ -173,7 +188,7 @@ export class SubscriptionHandler {
     context: ApiRequestContext,
   ): Promise<ApiHandlerResult<ResetSubscriptionResponse | null>> {
     try {
-      const session = await this.dependencies.sessionService.requireSession(context);
+      const session = await this.requireAuthorizedSession(context);
       const subscriptionId = requirePositiveInteger(context.params.id, 'subscription id');
       const result = await this.dependencies.resetService.resetSubscription(
         session.session.userId,
@@ -192,7 +207,7 @@ export class SubscriptionHandler {
     context: ApiRequestContext,
   ): Promise<ApiHandlerResult<ResetQuotaSummary | null>> {
     try {
-      const session = await this.dependencies.sessionService.requireSession(context);
+      const session = await this.requireAuthorizedSession(context);
       const subscriptionId = requirePositiveInteger(context.params.id, 'subscription id');
       const result = await this.dependencies.resetService.getResetQuotaSummary(
         session.session.userId,

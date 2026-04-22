@@ -53,6 +53,7 @@ const (
 	subFieldDailyUsage   = "daily_usage"
 	subFieldWeeklyUsage  = "weekly_usage"
 	subFieldMonthlyUsage = "monthly_usage"
+	subFieldDailyBonus   = "daily_bonus"
 	subFieldVersion      = "version"
 )
 
@@ -210,6 +211,10 @@ func (c *billingCache) parseSubscriptionCache(data map[string]string) (*service.
 		result.MonthlyUsage, _ = strconv.ParseFloat(monthlyStr, 64)
 	}
 
+	if bonusStr, ok := data[subFieldDailyBonus]; ok {
+		result.DailyBonus, _ = strconv.ParseFloat(bonusStr, 64)
+	}
+
 	if versionStr, ok := data[subFieldVersion]; ok {
 		result.Version, _ = strconv.ParseInt(versionStr, 10, 64)
 	}
@@ -230,6 +235,7 @@ func (c *billingCache) SetSubscriptionCache(ctx context.Context, userID, groupID
 		subFieldDailyUsage:   data.DailyUsage,
 		subFieldWeeklyUsage:  data.WeeklyUsage,
 		subFieldMonthlyUsage: data.MonthlyUsage,
+		subFieldDailyBonus:   data.DailyBonus,
 		subFieldVersion:      data.Version,
 	}
 

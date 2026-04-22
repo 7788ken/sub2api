@@ -19,6 +19,8 @@ type UserSubscription struct {
 	WeeklyUsageUSD  float64
 	MonthlyUsageUSD float64
 
+	DailyBonusUSD float64 // Rollover carry bonus added to daily limit
+
 	AssignedBy *int64
 	AssignedAt time.Time
 	Notes      string
@@ -99,7 +101,7 @@ func (s *UserSubscription) CheckDailyLimit(group *Group, additionalCost float64)
 	if !group.HasDailyLimit() {
 		return true
 	}
-	return s.DailyUsageUSD+additionalCost <= *group.DailyLimitUSD
+	return s.DailyUsageUSD+additionalCost <= *group.DailyLimitUSD+s.DailyBonusUSD
 }
 
 func (s *UserSubscription) CheckWeeklyLimit(group *Group, additionalCost float64) bool {

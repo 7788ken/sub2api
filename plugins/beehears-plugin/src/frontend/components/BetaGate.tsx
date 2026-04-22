@@ -1,48 +1,174 @@
-import { useState, useCallback } from 'react';
-import { Input, Button, App } from 'antd';
+import { useEffect, useState } from 'react';
+import { Alert, Input, Button, App, Spin } from 'antd';
 import { usePlugin } from '../i18n/context';
 
-const STORAGE_KEY = 'beehears_beta_unlocked';
+const IFRAME_TOKEN = new URLSearchParams(window.location.search).get('token') ?? '';
 
-function isUnlocked(): boolean {
-  return sessionStorage.getItem(STORAGE_KEY) === '1';
+type BetaStatus = {
+  required: boolean;
+  unlocked: boolean;
+};
+
+type VerifyResult = 'ok' | 'wrong' | 'auth' | 'rate_limited';
+type StatusResult = BetaStatus | 'auth' | 'error';
+
+function buildAuthHeaders(): Record<string, string> {
+  return IFRAME_TOKEN ? { 'x-sub2api-token': IFRAME_TOKEN } : {};
 }
 
-async function verifyPassword(password: string): Promise<boolean> {
-  try {
-    const res = await fetch('/api/beta/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    return data.success === true;
-  } catch {
-    return false;
+async function fetchBetaStatus(): Promise<StatusResult> {
+  const res = await fetch('/api/beta/status', {
+    method: 'GET',
+    credentials: 'include',
+    headers: buildAuthHeaders(),
+  });
+
+  const data = await res.json();
+  if (res.ok && data.success === true) {
+    return data.data as BetaStatus;
   }
+  if (res.status === 401) {
+    return 'auth';
+  }
+  return 'error';
+}
+
+async function verifyPassword(password: string): Promise<VerifyResult> {
+  const res = await fetch('/api/beta/verify', {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...buildAuthHeaders(),
+    },
+    body: JSON.stringify({ password }),
+  });
+
+  const data = await res.json();
+  if (res.ok && data.success === true) {
+    return 'ok';
+  }
+  if (res.status === 401) {
+    return 'auth';
+  }
+  if (res.status === 429) {
+    return 'rate_limited';
+  }
+  return 'wrong';
 }
 
 export function BetaGate({ children }: { children: React.ReactNode }) {
   const { t } = usePlugin();
   const { message } = App.useApp();
-  const [unlocked, setUnlocked] = useState(isUnlocked);
+  const [status, setStatus] = useState<BetaStatus | null>(null);
+  const [statusState, setStatusState] = useState<'loading' | 'ready' | 'auth' | 'error'>('loading');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = useCallback(async () => {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStatus() {
+      setStatusState('loading');
+      try {
+        const result = await fetchBetaStatus();
+        if (cancelled) {
+          return;
+        }
+
+        if (result === 'auth') {
+          setStatus(null);
+          setStatusState('auth');
+          return;
+        }
+
+        if (result === 'error') {
+          setStatus(null);
+          setStatusState('error');
+          return;
+        }
+
+        setStatus(result);
+        setStatusState('ready');
+      } catch {
+        if (cancelled) {
+          return;
+        }
+        setStatus(null);
+        setStatusState('error');
+      }
+    }
+
+    void loadStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function handleSubmit() {
     if (!password.trim()) return;
     setLoading(true);
-    const ok = await verifyPassword(password.trim());
-    setLoading(false);
-    if (ok) {
-      sessionStorage.setItem(STORAGE_KEY, '1');
-      setUnlocked(true);
-    } else {
-      message.error(t.beta_wrong_password);
+    let result: VerifyResult = 'wrong';
+    try {
+      result = await verifyPassword(password.trim());
+    } catch {
+      result = 'wrong';
     }
-  }, [password, message, t]);
+    setLoading(false);
+    if (result === 'ok') {
+      setStatus({ required: true, unlocked: true });
+      setStatusState('ready');
+      setPassword('');
+      return;
+    }
+    if (result === 'auth') {
+      message.error(t.beta_auth_required);
+      setStatusState('auth');
+      return;
+    }
+    if (result === 'rate_limited') {
+      message.error(t.beta_rate_limited);
+      return;
+    }
+    message.error(t.beta_wrong_password);
+  }
 
-  if (unlocked) return <>{children}</>;
+  if (statusState === 'loading') {
+    return (
+      <div className="ssc-beta-gate">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (statusState === 'auth') {
+    return (
+      <div className="ssc-beta-gate">
+        <Alert
+          type="warning"
+          showIcon
+          message={t.beta_title}
+          description={t.beta_auth_required}
+        />
+      </div>
+    );
+  }
+
+  if (statusState === 'error') {
+    return (
+      <div className="ssc-beta-gate">
+        <Alert
+          type="error"
+          showIcon
+          message={t.error_title}
+          description={t.error_desc}
+        />
+      </div>
+    );
+  }
+
+  if (status && (!status.required || status.unlocked)) return <>{children}</>;
 
   return (
     <div className="ssc-beta-gate">

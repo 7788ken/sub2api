@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { usePlugin } from '../../i18n/context';
 import { useResetSubscription, useToggleRollover } from '../../hooks/useSubscriptions';
 import type { SubscriptionSummary } from '../../types/subscriptions';
+import { formatDisplayQuota } from '../../utils/number-format';
 import { ResetConfirmModal } from './ResetConfirmModal';
 import { RolloverHistoryModal } from './RolloverHistoryModal';
 import { UsageProgress, getUsageStateRawColor } from './UsageProgress';
@@ -31,12 +32,18 @@ export function SubscriptionCard({ subscription, animationDelay = 0 }: Subscript
   const [historyOpen, setHistoryOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
 
+  const isExpired = subscription.is_expired;
   const totalQuota = subscription.daily_quota + subscription.carry_open;
   const statusRaw = getUsageStateRawColor(subscription.current_used);
 
   const badgeText = `${t.card_badge_week} ${subscription.reset_quota_weekly} / ${t.card_badge_30d} ${subscription.reset_quota_30d}`;
 
   const handleToggle = async (checked: boolean) => {
+    if (isExpired) {
+      message.error(t.msg_rollover_expired);
+      return;
+    }
+
     try {
       await toggleMutation.mutateAsync({ id: subscription.id, enabled: checked });
       message.success(checked ? t.msg_rollover_on : t.msg_rollover_off);
@@ -74,6 +81,11 @@ export function SubscriptionCard({ subscription, animationDelay = 0 }: Subscript
                 {subscription.category}
               </Tag>
             )}
+            {isExpired && (
+              <Tag style={{ margin: 0, fontSize: 11, borderRadius: 20 }} color="error">
+                {t.card_label_expired}
+              </Tag>
+            )}
           </div>
           <span style={{ fontSize: 12, color: 'var(--ssc-text-muted)' }}>#{subscription.id}</span>
         </div>
@@ -82,18 +94,18 @@ export function SubscriptionCard({ subscription, animationDelay = 0 }: Subscript
           <UsageProgress currentUsed={subscription.current_used} totalQuota={totalQuota} size={88} />
           <div className="ssc-card-data">
             <div className="ssc-card-available-row">
-              <strong className="ssc-available-value">{subscription.available_quota}</strong>
+              <strong className="ssc-available-value">{formatDisplayQuota(subscription.available_quota)}</strong>
               <span className="ssc-available-label-inline">{t.card_label_available}</span>
             </div>
             <div className="ssc-card-stats-row">
               <div className="ssc-card-stat-item">
                 <span className="ssc-label">{t.card_label_daily_quota}</span>
-                <strong>{subscription.daily_quota}</strong>
+                <strong>{formatDisplayQuota(subscription.daily_quota)}</strong>
               </div>
               <div className="ssc-card-stat-divider" />
               <div className="ssc-card-stat-item">
                 <span className="ssc-label">{t.card_label_carry}</span>
-                <strong>{subscription.balance_carry}</strong>
+                <strong>{formatDisplayQuota(subscription.balance_carry)}</strong>
               </div>
               <div className="ssc-card-stat-divider" />
               <div className="ssc-card-stat-item">
@@ -111,7 +123,8 @@ export function SubscriptionCard({ subscription, animationDelay = 0 }: Subscript
               <Switch
                 size="small"
                 checked={subscription.rollover_enabled}
-                loading={toggleMutation.isPending}
+                loading={toggleMutation.isPending && !isExpired}
+                disabled={isExpired}
                 onChange={handleToggle}
               />
             </div>
@@ -124,6 +137,7 @@ export function SubscriptionCard({ subscription, animationDelay = 0 }: Subscript
             <Button
               size="small"
               type="default"
+              disabled={isExpired}
               onClick={() => setResetOpen(true)}
               style={{ borderColor: 'var(--ssc-status-warning)', color: 'var(--ssc-status-warning)' }}
             >

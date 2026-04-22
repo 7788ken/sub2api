@@ -2850,6 +2850,51 @@ func (r *usageLogRepository) GetBatchAPIKeyUsageStats(ctx context.Context, apiKe
 	return result, nil
 }
 
+// GetSubscriptionActualCostSnapshot gets settled actual_cost totals for subscriptions within a time range.
+func (r *usageLogRepository) GetSubscriptionActualCostSnapshot(ctx context.Context, subscriptionIDs []int64, startTime, endTime time.Time) (map[int64]float64, error) {
+	result := make(map[int64]float64)
+	normalizedSubscriptionIDs := normalizePositiveInt64IDs(subscriptionIDs)
+	if len(normalizedSubscriptionIDs) == 0 {
+		return result, nil
+	}
+
+	for _, id := range normalizedSubscriptionIDs {
+		result[id] = 0
+	}
+
+	query := `
+		SELECT
+			subscription_id,
+			COALESCE(SUM(actual_cost), 0) AS actual_cost
+		FROM usage_logs
+		WHERE subscription_id = ANY($1)
+		  AND created_at >= $2
+		  AND created_at < $3
+		GROUP BY subscription_id
+	`
+	rows, err := r.sql.QueryContext(ctx, query, pq.Array(normalizedSubscriptionIDs), startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var subscriptionID int64
+		var actualCost float64
+		if err := rows.Scan(&subscriptionID, &actualCost); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		result[subscriptionID] = actualCost
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // GetUsageTrendWithFilters returns usage trend data with optional filters
 func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, startTime, endTime time.Time, granularity string, userID, apiKeyID, accountID, groupID int64, model string, requestType *int16, stream *bool, billingType *int8) (results []TrendDataPoint, err error) {
 	if shouldUsePreaggregatedTrend(granularity, userID, apiKeyID, accountID, groupID, model, requestType, stream, billingType) {

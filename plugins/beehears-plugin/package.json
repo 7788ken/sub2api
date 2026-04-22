@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "tsx src/jobs/services/rollover-job-service.test.ts",
     "dev": "node --env-file=.env --import tsx/esm server.ts",
     "build": "vite build",
     "start": "node --import tsx server.ts",
